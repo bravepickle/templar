@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"io/ioutil"
 	"log"
@@ -42,7 +43,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	inputFile = cwd + `/` + strings.TrimLeft(inputFile, `./`)
+	if inputFile[:1] != `/` { // is absolute path?
+		inputFile = cwd + `/` + strings.TrimLeft(inputFile, `./`)
+	}
 
 	if verbose {
 		log.Println(`Read params from:`, inputFile)
@@ -55,6 +58,72 @@ func main() {
 		log.Fatal(`Input file is invalid for reading: `, inputFile)
 	}
 
+	// TODO: fix path creation. Should support properly absolute paths
+
+	var tplContents string
+
+	if templateFile != `` { // is defined?
+		if verbose {
+			log.Println(`Attempting to read template contents from file...`)
+		}
+		if templateFile[:1] != `/` { // is absolute path?
+			templateFile = cwd + `/` + strings.TrimLeft(templateFile, `./`)
+		}
+
+		if stat, err := os.Stat(templateFile); err != nil || stat.Mode().IsRegular() == false {
+			log.Fatal(`Template file is invalid for reading: `, templateFile)
+		}
+
+		rawTemplate, err := ioutil.ReadFile(templateFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		tplContents = string(rawTemplate)
+	} else {
+		if verbose {
+			log.Println(`Attempting to read template contents from STDIN...`)
+		}
+
+		// rawTemplate, err := ioutil.ReadAll(os.Stdin)
+		// var rawTemplate []byte
+
+		reader := bufio.NewReader(os.Stdin)
+
+		for {
+			line, err := reader.ReadString('\n')
+
+			if err != nil && err.Error() == `EOF` { // handling gracefully EOF
+				if verbose {
+					log.Println(`Found EOF for STDIN input data. Finishing...`)
+				}
+
+				break
+			}
+
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			log.Println(`Read string: `, line)
+
+			tplContents += line
+
+			log.Println(`Content: `, tplContents)
+			// TODO: ctr+d to stop input
+		}
+
+		// io.Reader
+		// cnt, err := io.ReadFull(os.Stdin, rawTemplate)
+		// log.Println(`cnt:`, cnt)
+		// rawTemplate := buf
+		// if err != nil {
+		// 	log.Fatal(err)
+		// }
+
+		// tplContents = string(rawTemplate)
+	}
+
 	contents, err := ioutil.ReadFile(inputFile)
 	if err != nil {
 		log.Fatal(err)
@@ -62,6 +131,10 @@ func main() {
 
 	if verbose && string(contents) == `` {
 		log.Printf("File %s is empty", inputFile)
+	}
+
+	if tplContents == `` {
+		log.Fatal(`Either template file or STDIN should contain template to render`)
 	}
 
 	var parser Parser
@@ -77,15 +150,17 @@ func main() {
 	// fmt.Println(`Hello, world`, inputFile, inputFormat, outputFile, cwd, string(contents))
 	// fmt.Println(parser)
 
-	// log.Println(`=====================`)
-	//
-	// for k, v := range parser.GetParams() {
-	// 	log.Println(`Parsed`, k, `=`, v)
-	// }
-	//
-	// log.Println(`=====================`)
+	if verbose {
+		log.Println(`===================== Parsed Values =====================`)
 
-	tpl, err := template.New(outputFile).Parse(`This is a tryoute for "{{ .TEST }}" value`)
+		for k, v := range parser.GetParams() {
+			log.Println(k, `=`, v)
+		}
+
+		log.Println(`=================== Parsed Values End ===================`)
+	}
+
+	tpl, err := template.New(outputFile).Parse(tplContents)
 	if err != nil {
 		log.Fatal(err)
 	}
