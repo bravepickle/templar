@@ -95,7 +95,7 @@ func main() {
 
 			if err != nil && err.Error() == `EOF` { // handling gracefully EOF
 				if verbose {
-					log.Println(`Found EOF for STDIN input data. Finishing...`)
+					log.Println(`Found EOF. Finishing reading input...`)
 				}
 
 				break
@@ -110,7 +110,7 @@ func main() {
 			tplContents += line
 
 			log.Println(`Content: `, tplContents)
-			// TODO: ctr+d to stop input
+			// TODO: ctr+d to stop input  - add to README
 		}
 
 		// io.Reader
