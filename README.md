@@ -1,6 +1,7 @@
 # templar
 Small files generator from templates written in Golang
 
+Push ctr+d to stop writing to STDIN interactively
 
 ## TODO
 - [ ] Add binary executables for some of the architectures
@@ -9,3 +10,4 @@ Small files generator from templates written in Golang
 - [ ] Support types: text, html
 - [ ] Optionally use facter or similar to pass extra params from environment and similar sources
 - [ ] As input use ENV values, JSON, key-values from file or directly set as params
+- [x] Read data for template by piping
