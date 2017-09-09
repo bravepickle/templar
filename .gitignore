@@ -15,3 +15,5 @@
 
 # Local
 templar
+/templates/
+*.env
