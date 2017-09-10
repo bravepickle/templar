@@ -17,3 +17,4 @@
 templar
 /templates/
 *.env
+*.txt

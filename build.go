@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"html/template"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -117,11 +118,11 @@ func doBuild() {
 			log.Println(`Content: `, tplContents)
 		}
 
-		envs := os.Environ()
-
-		for k, v := range envs {
-			log.Println(`ENV:`, k, ` `, v)
-		}
+		// envs := os.Environ()
+		//
+		// for k, v := range envs {
+		// 	log.Println(`ENV:`, k, ` `, v)
+		// }
 
 		// io.Reader
 		// cnt, err := io.ReadFull(os.Stdin, rawTemplate)
@@ -152,7 +153,9 @@ func doBuild() {
 		}
 	}
 
-	switch inputFormat {
+	log.Println(InputRunCommand)
+
+	switch InputRunCommand.InputFormat {
 	case `env`:
 		parser = NewEnvParser(string(contents))
 	default:
@@ -178,7 +181,84 @@ func doBuild() {
 		log.Fatal(err)
 	}
 
-	if err = tpl.Execute(os.Stdout, parser.GetParams()); err != nil {
-		log.Fatal(err)
+	var output io.Writer
+	var file *os.File
+
+	if InputRunCommand.UseStdOut() {
+		output = os.Stdout
+	} else if verbose {
+		file, err = createFile(outputFile)
+		if err != nil {
+			log.Fatal(err)
+			os.Exit(1)
+		}
+
+		// output, err = os.Open(outputFile)
+		// if err != nil {
+		// 	log.Fatal(err)
+		// 	os.Exit(1)
+		// }
+
+		// defer file.Close()
+
+		output = io.MultiWriter(file, os.Stdout)
+	} else {
+		file, err = createFile(outputFile)
+		if err != nil {
+			log.Fatal(err)
+			os.Exit(1)
+		}
+
+		// output, err = os.OpenFile(outputFile, os.O_WRONLY, 0644)
+		// if err != nil {
+		// 	log.Fatal(err)
+		// 	os.Exit(1)
+		// }
+
+		// defer file.Close()
+
+		output = file
 	}
+
+	output, err = os.OpenFile(outputFile, os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
+
+	if file != nil {
+		defer file.Close()
+	}
+
+	if err = tpl.Execute(output, parser.GetParams()); err != nil {
+		log.Fatal(err, parser.GetParams())
+	}
+
+}
+
+func createFile(path string) (file *os.File, err error) {
+	if verbose {
+		log.Println(`Attempting create file:`, path)
+	}
+	// detect if file exists
+	_, err = os.Stat(path)
+
+	// create file if not exists
+	if os.IsNotExist(err) {
+		file, err = os.Create(path)
+		if err != nil {
+			return file, err
+		}
+		// defer file.Close()
+		if verbose {
+			log.Println(`File created`)
+		}
+	}
+
+	if verbose {
+		log.Println(`File already exists. Rewriting...`)
+		// TODO: backup file
+	}
+
+	return file, err
 }

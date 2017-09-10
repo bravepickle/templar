@@ -20,7 +20,7 @@ func init() {
 }
 
 func main() {
-	// checkVerbosity()
+	checkVerbosity()
 
 	if flag.NArg() > 1 {
 		switch flag.Arg(0) {
@@ -33,6 +33,10 @@ func main() {
 				log.Fatal(`Not found command position`)
 				os.Exit(1)
 			}
+
+			// if verbose {
+			log.Println(`Index for command build is:`, index)
+			// }
 
 			runCommand.Parse(os.Args[index+1:])
 

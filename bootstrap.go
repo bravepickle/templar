@@ -44,6 +44,7 @@ func (t InputCommonStruct) ShowHelp() bool {
 
 // IsVerbose Run in verbose mode
 func (t InputCommonStruct) IsVerbose() bool {
+	// return true
 	return t.Verbose || t.VerboseAlias
 }
 
@@ -132,7 +133,7 @@ func initRunCommand() {
 
 func checkVerbosity() {
 	if verbose {
-		log.SetFlags(log.LstdFlags)
+		log.SetFlags(log.LstdFlags | log.Lshortfile)
 		log.SetPrefix(`DEBUG: `)
 		log.Println(`Running in verbose mode.`)
 	} else {
@@ -149,6 +150,7 @@ func initCommands() {
 	flag.Parse()
 
 	verbose = InputCommon.IsVerbose()
+	// verbose = true
 
 	if InputCommon.Help || InputCommon.HelpAlias {
 		printUsage()
@@ -159,10 +161,9 @@ func initCommands() {
 // CommandIndexArg get index key for specified argument
 // return -1 if not found
 func CommandIndexArg(argument string) int {
-	index := 2
-	for i := index; i < len(os.Args); i++ {
+	for i := 1; i < len(os.Args); i++ {
 		if os.Args[i] == argument {
-			return index
+			return i
 		}
 	}
 

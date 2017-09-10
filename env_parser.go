@@ -24,8 +24,14 @@ func (p EnvParser) ParseFromString(data string) map[string]string {
 
 	result := make(map[string]string)
 	for _, line := range lines {
-		log.Println(`Val => `, line)
-		// log.Println(`Key => `, key)
+		line = strings.TrimSpace(line)
+		if line == `` || line[0:1] == `#` {
+			if verbose {
+				log.Printf(`Skipping line: %s`, line)
+			}
+
+			continue
+		}
 
 		split := strings.SplitN(line, `=`, 2)
 
