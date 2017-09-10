@@ -187,48 +187,48 @@ func doBuild() {
 	if InputRunCommand.UseStdOut() {
 		output = os.Stdout
 	} else if verbose {
-		file, err = createFile(outputFile)
+		err = createFile(outputFile)
 		if err != nil {
 			log.Fatal(err)
 			os.Exit(1)
 		}
 
-		// output, err = os.Open(outputFile)
-		// if err != nil {
-		// 	log.Fatal(err)
-		// 	os.Exit(1)
-		// }
+		file, err = os.OpenFile(outputFile, os.O_WRONLY|os.O_TRUNC, 0644)
+		if err != nil {
+			log.Fatal(err)
+			os.Exit(1)
+		}
 
-		// defer file.Close()
+		defer file.Close()
 
 		output = io.MultiWriter(file, os.Stdout)
 	} else {
-		file, err = createFile(outputFile)
+		err = createFile(outputFile)
 		if err != nil {
 			log.Fatal(err)
 			os.Exit(1)
 		}
 
-		// output, err = os.OpenFile(outputFile, os.O_WRONLY, 0644)
-		// if err != nil {
-		// 	log.Fatal(err)
-		// 	os.Exit(1)
-		// }
+		file, err = os.OpenFile(outputFile, os.O_WRONLY|os.O_TRUNC, 0644)
+		if err != nil {
+			log.Fatal(err)
+			os.Exit(1)
+		}
 
-		// defer file.Close()
+		defer file.Close()
 
 		output = file
 	}
 
-	output, err = os.OpenFile(outputFile, os.O_WRONLY, 0644)
-	if err != nil {
-		log.Fatal(err)
-		os.Exit(1)
-	}
+	// output, err = os.OpenFile(outputFile, os.O_WRONLY, 0644)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// 	os.Exit(1)
+	// }
 
-	if file != nil {
-		defer file.Close()
-	}
+	// if file != nil {
+	// 	defer file.Close()
+	// }
 
 	if err = tpl.Execute(output, parser.GetParams()); err != nil {
 		log.Fatal(err, parser.GetParams())
@@ -236,7 +236,8 @@ func doBuild() {
 
 }
 
-func createFile(path string) (file *os.File, err error) {
+func createFile(path string) (err error) {
+	var file *os.File
 	if verbose {
 		log.Println(`Attempting create file:`, path)
 	}
@@ -247,9 +248,9 @@ func createFile(path string) (file *os.File, err error) {
 	if os.IsNotExist(err) {
 		file, err = os.Create(path)
 		if err != nil {
-			return file, err
+			return err
 		}
-		// defer file.Close()
+		defer file.Close()
 		if verbose {
 			log.Println(`File created`)
 		}
@@ -260,5 +261,5 @@ func createFile(path string) (file *os.File, err error) {
 		// TODO: backup file
 	}
 
-	return file, err
+	return err
 }
