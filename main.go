@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 )
@@ -34,10 +33,6 @@ func main() {
 				os.Exit(1)
 			}
 
-			// if verbose {
-			log.Println(`Index for command build is:`, index)
-			// }
-
 			runCommand.Parse(os.Args[index+1:])
 
 			if InputRunCommand.ShowHelp() {
@@ -47,8 +42,23 @@ func main() {
 
 			doBuild()
 			os.Exit(0)
+		case "init":
+			index := CommandIndexArg(`init`)
+			if index == -1 {
+				log.Fatal(`Not found command position`)
+				os.Exit(1)
+			}
+
+			initCommand.Parse(os.Args[index+1:])
+
+			if InputInitCommand.ShowHelp() {
+				printInitUsage()
+				os.Exit(0)
+			}
+
+			doInit()
+			os.Exit(0)
 		default:
-			fmt.Println(`HEREEEE`)
 			printUsage()
 			os.Exit(1)
 		}

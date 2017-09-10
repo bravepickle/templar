@@ -60,7 +60,7 @@ var InputRunCommand InputRunCommandStruct
 var InputCommon InputCommonStruct
 
 var verbose bool // use as variable to easily refer to it
-var runCommand *flag.FlagSet
+var runCommand, initCommand *flag.FlagSet
 
 // var command string // action selected when running app
 // var cwd string // current working directory application was run from
@@ -147,6 +147,7 @@ func initCommands() {
 	flag.BoolVar(&InputCommon.Help, `h`, false, `Print command usage options [Optional].`)
 	flag.BoolVar(&InputCommon.HelpAlias, `help`, false, `Print command usage options [Optional].`)
 	initRunCommand()
+	initInitCommand()
 	flag.Parse()
 
 	verbose = InputCommon.IsVerbose()
