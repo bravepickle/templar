@@ -220,20 +220,9 @@ func doBuild() {
 		output = file
 	}
 
-	// output, err = os.OpenFile(outputFile, os.O_WRONLY, 0644)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// 	os.Exit(1)
-	// }
-
-	// if file != nil {
-	// 	defer file.Close()
-	// }
-
 	if err = tpl.Execute(output, parser.GetParams()); err != nil {
 		log.Fatal(err, parser.GetParams())
 	}
-
 }
 
 func createFile(path string) (err error) {

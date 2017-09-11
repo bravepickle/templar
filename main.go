@@ -66,14 +66,4 @@ func main() {
 
 	printUsage()
 	os.Exit(0)
-	// log.Fatal(`Missed`)
-
-	// command = string(flag.NArg())
-	// log.Fatal(command, flag.NArg())
-
-	// cwd, err := os.Getwd()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
 }
