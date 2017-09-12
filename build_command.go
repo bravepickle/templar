@@ -9,9 +9,10 @@ import (
 	"os"
 )
 
-func doBuild() {
+func prepareBuildVars() {
 	var err error
 	var inputFile, outputFile, templateFile string
+
 	if InputRunCommand.InputFile != `` {
 		inputFile, err = RealPath(InputRunCommand.InputFile)
 		if err != nil {
@@ -33,16 +34,10 @@ func doBuild() {
 		}
 	}
 
-	// if InputRunCommand.InputFile[:1] != `/` { // is absolute path?
-	// 	InputRunCommand.InputFile = cwd + `/` + strings.TrimLeft(InputRunCommand.InputFile, `./`)
-	// }
-
 	InputRunCommand.InputFile = inputFile
 	InputRunCommand.OutputFile = outputFile
 	InputRunCommand.TemplateFile = templateFile
-	// outputFile := InputRunCommand.OutputFile
-	// templateFile := InputRunCommand.TemplateFile
-	inputFormat := InputRunCommand.InputFormat
+	// inputFormat := InputRunCommand.InputFormat
 
 	if verbose {
 		log.Println(`Read params from:`, InputRunCommand.InputFile)
@@ -54,8 +49,64 @@ func doBuild() {
 		} else {
 			log.Println(`Template to render:`, InputRunCommand.TemplateFile)
 		}
-
 	}
+}
+
+func readContentsFromFile(filepath string) string {
+	if verbose {
+		log.Println(`Attempting to read template contents from file...`)
+	}
+
+	if stat, err := os.Stat(filepath); err != nil || stat.Mode().IsRegular() == false {
+		log.Fatal(`File is invalid for reading: `, filepath)
+	}
+
+	rawFile, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return string(rawFile)
+}
+
+func readContentsFromStdIn() string {
+	var tplContents string
+	if verbose {
+		log.Println(`Attempting to read template contents from STDIN...`)
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+
+	for {
+		line, err := reader.ReadString('\n')
+
+		if err != nil && err.Error() == `EOF` { // handling gracefully EOF
+			if verbose {
+				log.Println(`Found EOF. Finishing reading input...`)
+			}
+
+			break
+		}
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		tplContents += line
+	}
+
+	return tplContents
+}
+
+func doBuild() {
+	var err error
+	var inputFile, outputFile, templateFile, inputFormat string
+	prepareBuildVars()
+
+	inputFile = InputRunCommand.InputFile
+	outputFile = InputRunCommand.OutputFile
+	templateFile = InputRunCommand.TemplateFile
+	inputFormat = InputRunCommand.InputFormat
 
 	if inputFile != `` {
 		if stat, err := os.Stat(inputFile); err != nil || stat.Mode().IsRegular() == false {
@@ -63,76 +114,11 @@ func doBuild() {
 		}
 	}
 
-	// TODO: fix path creation. Should support properly absolute paths
-
 	var tplContents string
-
-	log.Println(`TPL FILE:`, InputRunCommand.UseStdIn(), InputRunCommand.TemplateFile)
 	if !InputRunCommand.UseStdIn() {
-		if verbose {
-			log.Println(`Attempting to read template contents from file...`)
-		}
-		// if templateFile[:1] != `/` { // is absolute path?
-		// 	templateFile = cwd + `/` + strings.TrimLeft(templateFile, `./`)
-		// }
-
-		if stat, err := os.Stat(templateFile); err != nil || stat.Mode().IsRegular() == false {
-			log.Fatal(`Template file is invalid for reading: `, templateFile)
-		}
-
-		rawTemplate, err := ioutil.ReadFile(templateFile)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		tplContents = string(rawTemplate)
+		tplContents = readContentsFromFile(templateFile)
 	} else {
-		if verbose {
-			log.Println(`Attempting to read template contents from STDIN...`)
-		}
-
-		// rawTemplate, err := ioutil.ReadAll(os.Stdin)
-		// var rawTemplate []byte
-
-		reader := bufio.NewReader(os.Stdin)
-
-		for {
-			line, err := reader.ReadString('\n')
-
-			if err != nil && err.Error() == `EOF` { // handling gracefully EOF
-				if verbose {
-					log.Println(`Found EOF. Finishing reading input...`)
-				}
-
-				break
-			}
-
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			log.Println(`Read string: `, line)
-
-			tplContents += line
-
-			log.Println(`Content: `, tplContents)
-		}
-
-		// envs := os.Environ()
-		//
-		// for k, v := range envs {
-		// 	log.Println(`ENV:`, k, ` `, v)
-		// }
-
-		// io.Reader
-		// cnt, err := io.ReadFull(os.Stdin, rawTemplate)
-		// log.Println(`cnt:`, cnt)
-		// rawTemplate := buf
-		// if err != nil {
-		// 	log.Fatal(err)
-		// }
-
-		// tplContents = string(rawTemplate)
+		tplContents = readContentsFromStdIn()
 	}
 
 	if tplContents == `` {
@@ -153,18 +139,12 @@ func doBuild() {
 		}
 	}
 
-	log.Println(InputRunCommand)
-
-	switch InputRunCommand.InputFormat {
+	switch inputFormat {
 	case `env`:
 		parser = NewEnvParser(string(contents))
 	default:
 		log.Fatal(`Format not supported: `, inputFormat)
-
 	}
-
-	// fmt.Println(`Hello, world`, inputFile, inputFormat, outputFile, cwd, string(contents))
-	// fmt.Println(parser)
 
 	if verbose {
 		log.Println(`===================== Parsed Values =====================`)

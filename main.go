@@ -21,10 +21,23 @@ func init() {
 func main() {
 	checkVerbosity()
 
-	if flag.NArg() > 1 {
+	if flag.NArg() > 0 {
 		switch flag.Arg(0) {
 		case "list":
-			printCommands()
+			index := CommandIndexArg(`list`)
+			if index == -1 {
+				log.Fatal(`Not found command position`)
+				os.Exit(1)
+			}
+
+			listCommand.Parse(os.Args[index+1:])
+
+			if InputListCommand.ShowHelp() {
+				printListUsage()
+				os.Exit(0)
+			}
+
+			doList()
 			os.Exit(0)
 		case "build":
 			index := CommandIndexArg(`build`)

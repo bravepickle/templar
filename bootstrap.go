@@ -60,7 +60,7 @@ var InputRunCommand InputRunCommandStruct
 var InputCommon InputCommonStruct
 
 var verbose bool // use as variable to easily refer to it
-var runCommand, initCommand *flag.FlagSet
+var runCommand, initCommand, listCommand *flag.FlagSet
 
 // var command string // action selected when running app
 // var cwd string // current working directory application was run from
@@ -91,13 +91,6 @@ func printExamples() {
 	fmt.Printf("    %s --verbose\n\tinit Initialize new project in verbose mode\n", cmdName)
 	fmt.Printf("    %s build --format=env --input=./data.env --template=./templates/test.tpl --output=./out.txt"+
 		"\n\t Create out.txt file from test.tpl and environment parameters found in data.env file\n", cmdName)
-}
-
-func printCommands() {
-	fmt.Println("Commands:")
-	fmt.Printf("    list    List all available commands.\n")
-	fmt.Printf("    init    Initialize project for templated within current dir.\n")
-	fmt.Printf("    build   Build file from template.\n")
 }
 
 func printRunUsage() {
@@ -148,6 +141,7 @@ func initCommands() {
 	flag.BoolVar(&InputCommon.HelpAlias, `help`, false, `Print command usage options [Optional].`)
 	initRunCommand()
 	initInitCommand()
+	initListCommand()
 	flag.Parse()
 
 	verbose = InputCommon.IsVerbose()

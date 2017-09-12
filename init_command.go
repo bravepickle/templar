@@ -37,9 +37,9 @@ func printInitExamples() {
 }
 
 func initInitCommand() {
-	initCommand = flag.NewFlagSet(`build`, flag.ExitOnError)
+	initCommand = flag.NewFlagSet(`init`, flag.ExitOnError)
 	initCommand.BoolVar(&InputInitCommand.Help, `h`, false, `Print command usage suboptions [Optional].`)
-	initCommand.BoolVar(&InputRunCommand.HelpAlias, `help`, false, `Print command usage suboptions [Optional].`)
+	initCommand.BoolVar(&InputInitCommand.HelpAlias, `help`, false, `Print command usage suboptions [Optional].`)
 }
 
 func doInit() {
