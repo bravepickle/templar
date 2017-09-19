@@ -6,8 +6,6 @@ import (
 	"os"
 )
 
-// var inputFilePaths []string
-
 // Parser interface is a common parser interface for all input formats
 type Parser interface {
 	GetParams() map[string]string

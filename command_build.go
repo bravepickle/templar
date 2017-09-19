@@ -2,12 +2,35 @@ package main
 
 import (
 	"bufio"
+	"flag"
+	"fmt"
 	"html/template"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 )
+
+// InputRunCommandStruct contains variables with all options for input of build command
+type InputRunCommandStruct struct {
+	InputFile, OutputFile, InputFormat, TemplateFile string
+	Help, HelpAlias                                  bool
+}
+
+// UseStdIn Use STDIN for template data input
+func (t InputRunCommandStruct) UseStdIn() bool {
+	return t.TemplateFile == ``
+}
+
+// UseStdOut Use STDOUT for rendered template data output
+func (t InputRunCommandStruct) UseStdOut() bool {
+	return t.OutputFile == ``
+}
+
+// ShowHelp Print command usage
+func (t InputRunCommandStruct) ShowHelp() bool {
+	return t.Help || t.HelpAlias
+}
 
 func prepareBuildVars() {
 	var err error
@@ -255,3 +278,37 @@ func createFile(path string) (err error) {
 
 	return err
 }
+
+func printRunUsage() {
+	fmt.Printf("Usage: %s [OPTIONS] build [COMMAND_OPTIONS] \n", InputCommon.CommandName)
+	runCommand.PrintDefaults()
+	fmt.Println()
+	printRunExamples()
+}
+
+func printRunExamples() {
+	cmdName := InputCommon.CommandName
+
+	fmt.Println("Examples:")
+	fmt.Printf("    %s build --format=env --input=./data.env --template=./templates/test.tpl --output=./out.txt"+
+		"\n\tCreate out.txt file from test.tpl and environment parameters found in data.env file\n", cmdName)
+	fmt.Printf("    echo 'Buy me {{ .ApplesCount }}.' | %s build --format=env --input=./data.env --output=./out.txt"+
+		"\n\tCreate out.txt file from tamplate passed through STDIN aka piping."+
+		"\n\tIf no STDIN is passed, then text can be typed directly and finished with Ctrl+D keystroke."+
+		"\n\tDefault behavior when template is not specified.\n", cmdName)
+	fmt.Printf("    echo 'Buy me {{ .ApplesCount }}.' | %s build --format=env --input=./data.env"+
+		"\n\tOutputs rendered template from STDIN to STDOUT.\n", cmdName)
+}
+
+func initRunCommand() {
+	runCommand = flag.NewFlagSet(`build`, flag.ExitOnError)
+	runCommand.StringVar(&InputRunCommand.InputFormat, `format`, `json`, `Input file format [Optional]. Supported values: env, json, key-value.`) // help := flag.Bool(`h`, value, usage)
+	runCommand.BoolVar(&InputRunCommand.Help, `h`, false, `Print command usage suboptions [Optional].`)
+	runCommand.BoolVar(&InputRunCommand.HelpAlias, `help`, false, `Print command usage suboptions [Optional].`)
+	runCommand.StringVar(&InputRunCommand.InputFile, `input`, ``, `Input file to read params from [Optional].`)
+	runCommand.StringVar(&InputRunCommand.OutputFile, `output`, ``, `Output file to render to [Optional].`)
+	runCommand.StringVar(&InputRunCommand.TemplateFile, `template`, ``, `Template file to render [Optional].`)
+}
+
+// InputRunCommand options for run command stored here
+var InputRunCommand InputRunCommandStruct
