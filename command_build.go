@@ -37,7 +37,6 @@ func prepareBuildVars() {
 	InputRunCommand.InputFile = inputFile
 	InputRunCommand.OutputFile = outputFile
 	InputRunCommand.TemplateFile = templateFile
-	// inputFormat := InputRunCommand.InputFormat
 
 	if verbose {
 		log.Println(`Read params from:`, InputRunCommand.InputFile)
@@ -98,22 +97,7 @@ func readContentsFromStdIn() string {
 	return tplContents
 }
 
-func doBuild() {
-	var err error
-	var inputFile, outputFile, templateFile, inputFormat string
-	prepareBuildVars()
-
-	inputFile = InputRunCommand.InputFile
-	outputFile = InputRunCommand.OutputFile
-	templateFile = InputRunCommand.TemplateFile
-	inputFormat = InputRunCommand.InputFormat
-
-	if inputFile != `` {
-		if stat, err := os.Stat(inputFile); err != nil || stat.Mode().IsRegular() == false {
-			log.Fatal(`Input file is invalid for reading: `, inputFile)
-		}
-	}
-
+func readTplContents(templateFile string) string {
 	var tplContents string
 	if !InputRunCommand.UseStdIn() {
 		tplContents = readContentsFromFile(templateFile)
@@ -125,44 +109,27 @@ func doBuild() {
 		log.Fatal(`Either template file or STDIN should contain template to render`)
 	}
 
-	var parser Parser
-	var contents []byte
+	return tplContents
+}
 
-	if inputFile != `` {
-		contents, err = ioutil.ReadFile(inputFile)
-		if err != nil {
-			log.Fatal(err)
-		}
+func assertFileReadable(filename string) {
+	if stat, err := os.Stat(filename); err != nil || stat.Mode().IsRegular() == false {
+		log.Fatal(`Input file is invalid for reading: `, filename)
+	}
+}
 
-		if verbose && string(contents) == `` {
-			log.Printf("File %s is empty", inputFile)
-		}
+func dumpParsedValues(parser Parser) {
+	log.Println(`===================== Parsed Values =====================`)
+
+	for k, v := range parser.GetParams() {
+		log.Println(k, `=`, v)
 	}
 
-	switch inputFormat {
-	case `env`:
-		parser = NewEnvParser(string(contents))
-	default:
-		log.Fatal(`Format not supported: `, inputFormat)
-	}
+	log.Println(`=================== Parsed Values End ===================`)
+}
 
-	if verbose {
-		log.Println(`===================== Parsed Values =====================`)
-
-		for k, v := range parser.GetParams() {
-			log.Println(k, `=`, v)
-		}
-
-		log.Println(`=================== Parsed Values End ===================`)
-	}
-
-	tpl, err := template.New(outputFile).Parse(tplContents)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var output io.Writer
-	var file *os.File
+func openOutputWriter(outputFile string) (output io.Writer, file *os.File) {
+	var err error
 
 	if InputRunCommand.UseStdOut() {
 		output = os.Stdout
@@ -179,8 +146,6 @@ func doBuild() {
 			os.Exit(1)
 		}
 
-		defer file.Close()
-
 		output = io.MultiWriter(file, os.Stdout)
 	} else {
 		err = createFile(outputFile)
@@ -195,9 +160,67 @@ func doBuild() {
 			os.Exit(1)
 		}
 
-		defer file.Close()
-
 		output = file
+	}
+
+	return output, file
+}
+
+func readInputFileContents(inputFile string) (result string) {
+	assertFileReadable(inputFile)
+
+	contents, err := ioutil.ReadFile(inputFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	result = string(contents)
+
+	if verbose && result == `` {
+		log.Printf("File %s is empty", inputFile)
+	}
+
+	return result
+}
+
+func doBuild() {
+	var err error
+	var inputFile, outputFile, templateFile, inputFormat, contents string
+	var parser Parser
+
+	prepareBuildVars()
+
+	inputFile = InputRunCommand.InputFile
+	outputFile = InputRunCommand.OutputFile
+	templateFile = InputRunCommand.TemplateFile
+	inputFormat = InputRunCommand.InputFormat
+
+	tplContents := readTplContents(templateFile)
+
+	if inputFile != `` {
+		contents = readInputFileContents(inputFile)
+	}
+
+	switch inputFormat {
+	case `env`:
+		parser = NewEnvParser(contents)
+	default:
+		log.Fatal(`Format not supported: `, inputFormat)
+	}
+
+	if verbose {
+		dumpParsedValues(parser)
+	}
+
+	tpl, err := template.New(outputFile).Parse(tplContents)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	output, file := openOutputWriter(outputFile)
+
+	if file != nil {
+		defer file.Close()
 	}
 
 	if err = tpl.Execute(output, parser.GetParams()); err != nil {
