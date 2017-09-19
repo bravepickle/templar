@@ -144,9 +144,21 @@ func assertFileReadable(filename string) {
 func dumpParsedValues(parser Parser) {
 	log.Println(`===================== Parsed Values =====================`)
 
-	params := parser.GetParams().(map[string]string)
-	for k, v := range params {
-		log.Println(k, `=`, v)
+	params, ok := parser.GetParams().(map[string]string)
+	if ok {
+		for k, v := range params {
+			log.Println(k, `=`, v)
+		}
+	} else {
+		params, ok := parser.GetParams().(map[string]interface{})
+		if ok {
+			for k, v := range params {
+				log.Println(k, `=`, v)
+			}
+		} else {
+			log.Println(`Raw data: `, parser.GetParams())
+			// fmt.Println(reflect.TypeOf(parser.GetParams()))
+		}
 	}
 
 	log.Println(`=================== Parsed Values End ===================`)
@@ -228,6 +240,8 @@ func doBuild() {
 	switch inputFormat {
 	case `env`:
 		parser = NewEnvParser(contents)
+	case `json`:
+		parser = NewJSONParser(contents)
 	default:
 		log.Fatal(`Format not supported: `, inputFormat)
 	}
