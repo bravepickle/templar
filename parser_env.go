@@ -14,7 +14,7 @@ type EnvParser struct {
 }
 
 // GetParams read all params from parser
-func (p EnvParser) GetParams() map[string]string {
+func (p EnvParser) GetParams() interface{} {
 	return p.Params
 }
 
@@ -50,17 +50,6 @@ func (p EnvParser) ParseFromString(data string) map[string]string {
 		}
 	}
 
-	// p.Params = make(map[string]string)
-	// p.Params = result
-
-	// for key, val := range p.GetParams() {
-	// 	log.Println(`Val3 => `, val)
-	// 	log.Println(`Key3 => `, key)
-	//
-	// 	// result[val] = val
-	// 	// count++
-	// }
-
 	return result
 }
 
@@ -68,14 +57,6 @@ func (p EnvParser) ParseFromString(data string) map[string]string {
 func NewEnvParser(rawData string) EnvParser {
 	var parser EnvParser
 	parser.Params = parser.ParseFromString(rawData)
-
-	// for key, val := range parser.GetParams() {
-	// 	log.Println(`Val4 => `, val)
-	// 	log.Println(`Key4 => `, key)
-	//
-	// 	// result[val] = val
-	// 	// count++
-	// }
 
 	return parser
 }

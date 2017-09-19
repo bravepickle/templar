@@ -8,8 +8,7 @@ import (
 
 // Parser interface is a common parser interface for all input formats
 type Parser interface {
-	GetParams() map[string]string
-	ParseFromString(data string) (result map[string]string)
+	GetParams() interface{}
 }
 
 func init() {

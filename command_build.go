@@ -144,7 +144,8 @@ func assertFileReadable(filename string) {
 func dumpParsedValues(parser Parser) {
 	log.Println(`===================== Parsed Values =====================`)
 
-	for k, v := range parser.GetParams() {
+	params := parser.GetParams().(map[string]string)
+	for k, v := range params {
 		log.Println(k, `=`, v)
 	}
 
