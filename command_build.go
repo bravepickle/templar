@@ -250,7 +250,7 @@ func doBuild() {
 		dumpParsedValues(parser)
 	}
 
-	tpl, err := template.New(outputFile).Parse(tplContents)
+	tpl, err := template.New(outputFile).Funcs(funcMap).Parse(tplContents)
 	if err != nil {
 		log.Fatal(err)
 	}
