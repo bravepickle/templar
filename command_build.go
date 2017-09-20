@@ -313,6 +313,8 @@ func printRunExamples() {
 		"\n\tDefault behavior when template is not specified.\n", cmdName)
 	fmt.Printf("    echo 'Buy me {{ .ApplesCount }}.' | %s build --format=env --input=./data.env"+
 		"\n\tOutputs rendered template from STDIN to STDOUT.\n", cmdName)
+	fmt.Printf("    %s build --format=env --output=./out.txt"+
+		"\n\tOutputs rendered template from STDIN to ./out.txt and sets template params from OS ENV.\n", cmdName)
 }
 
 func initRunCommand() {
