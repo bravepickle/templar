@@ -22,3 +22,4 @@ See also (default functions and usages)[https://golang.org/pkg/text/template/#hd
 - [x] Read data for template by piping
 - [ ] Support all formats specified
 - [ ] Specify in docs all available template functions
+- [ ] Support configs that contain multiple templates to generate - some kind of templates aggregator to easily template files in batches
