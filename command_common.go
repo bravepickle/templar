@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"path/filepath"
+	"strings"
 )
 
 // InputCommonStruct contains all basic options for running application
@@ -25,7 +26,11 @@ func (t InputCommonStruct) IsVerbose() bool {
 }
 
 // RealPath creates real path to file or folder from relevant
-func RealPath(path string) (string, error) {
+func RealPath(path string, basePath string) (string, error) {
+	if basePath != `` { // if work dir is set then use it instead of abs path
+		return strings.TrimRight(basePath, `/`) + `/` + path, nil
+	}
+
 	return filepath.Abs(path)
 }
 
@@ -46,6 +51,7 @@ func printExamples() {
 	fmt.Printf("    %s -h      See help for using this command\n", cmdName)
 	fmt.Printf("    %s init    Initialize current working directory as new project\n", cmdName)
 	fmt.Printf("    %s --verbose\n\tinit Initialize new project in verbose mode\n", cmdName)
+	fmt.Printf("    %s build --format=env -d /tmp --format=env --input=./data.env --batch ./batch.json Build templates batch from file\n", cmdName)
 	fmt.Printf("    %s build --format=env --input=./data.env --template=./templates/test.tpl --output=./out.txt"+
 		"\n\t Create out.txt file from test.tpl and environment parameters found in data.env file\n", cmdName)
 }

@@ -13,8 +13,18 @@ import (
 
 // InputRunCommandStruct contains variables with all options for input of build command
 type InputRunCommandStruct struct {
-	InputFile, OutputFile, InputFormat, TemplateFile string
-	Help, HelpAlias                                  bool
+	InputFile, OutputFile, InputFormat, TemplateFile, BatchInputFile, WorkingDirectory string
+	Help, HelpAlias                                                                    bool
+}
+
+// UseBatch returns
+func (t InputRunCommandStruct) UseBatchInput() bool {
+	return t.BatchInputFile != ``
+}
+
+// HasWorkDir checks if working directory is set
+func (t InputRunCommandStruct) HasWorkDir() bool {
+	return t.WorkingDirectory != ``
 }
 
 // UseStdIn Use STDIN for template data input
@@ -34,24 +44,31 @@ func (t InputRunCommandStruct) ShowHelp() bool {
 
 func prepareBuildVars() {
 	var err error
-	var inputFile, outputFile, templateFile string
+	var inputFile, outputFile, templateFile, batchInputFile string
 
 	if InputRunCommand.InputFile != `` {
-		inputFile, err = RealPath(InputRunCommand.InputFile)
+		inputFile, err = RealPath(InputRunCommand.InputFile, InputRunCommand.WorkingDirectory)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
 	if !InputRunCommand.UseStdOut() {
-		outputFile, err = RealPath(InputRunCommand.OutputFile)
+		outputFile, err = RealPath(InputRunCommand.OutputFile, InputRunCommand.WorkingDirectory)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
 	if !InputRunCommand.UseStdIn() {
-		templateFile, err = RealPath(InputRunCommand.TemplateFile)
+		templateFile, err = RealPath(InputRunCommand.TemplateFile, InputRunCommand.WorkingDirectory)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	if !InputRunCommand.UseBatchInput() {
+		batchInputFile, err = RealPath(InputRunCommand.BatchInputFile, InputRunCommand.WorkingDirectory)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -60,16 +77,21 @@ func prepareBuildVars() {
 	InputRunCommand.InputFile = inputFile
 	InputRunCommand.OutputFile = outputFile
 	InputRunCommand.TemplateFile = templateFile
+	InputRunCommand.BatchInputFile = batchInputFile
 
 	if verbose {
 		log.Println(`Read params from:`, InputRunCommand.InputFile)
 		log.Println(`Read input format:`, InputRunCommand.InputFormat)
-		log.Println(`Output rendered data to:`, InputRunCommand.OutputFile)
 
-		if InputRunCommand.UseStdIn() {
-			log.Println(`Template to render: STDIN`)
+		if InputRunCommand.UseBatchInput() {
+			log.Println(`Templates to build from batch file:`, InputRunCommand.BatchInputFile)
 		} else {
-			log.Println(`Template to render:`, InputRunCommand.TemplateFile)
+			log.Println(`Output rendered data to:`, InputRunCommand.OutputFile)
+			if InputRunCommand.UseStdIn() {
+				log.Println(`Template to render: STDIN`)
+			} else {
+				log.Println(`Template to render:`, InputRunCommand.TemplateFile)
+			}
 		}
 	}
 }
@@ -320,11 +342,13 @@ func printRunExamples() {
 func initRunCommand() {
 	runCommand = flag.NewFlagSet(`build`, flag.ExitOnError)
 	runCommand.StringVar(&InputRunCommand.InputFormat, `format`, `json`, `Input file format [Optional]. Supported values: env, json, key-value.`) // help := flag.Bool(`h`, value, usage)
-	runCommand.BoolVar(&InputRunCommand.Help, `h`, false, `Print command usage suboptions [Optional].`)
-	runCommand.BoolVar(&InputRunCommand.HelpAlias, `help`, false, `Print command usage suboptions [Optional].`)
+	runCommand.BoolVar(&InputRunCommand.Help, `h`, false, `Print command usage sub-options [Optional].`)
+	runCommand.BoolVar(&InputRunCommand.HelpAlias, `help`, false, `Print command usage sub-options [Optional].`)
 	runCommand.StringVar(&InputRunCommand.InputFile, `input`, ``, `Input file to read params from [Optional].`)
 	runCommand.StringVar(&InputRunCommand.OutputFile, `output`, ``, `Output file to render to [Optional].`)
 	runCommand.StringVar(&InputRunCommand.TemplateFile, `template`, ``, `Template file to render [Optional].`)
+	runCommand.StringVar(&InputRunCommand.WorkingDirectory, `d`, ``, `Working directory for files [Optional].`)
+	runCommand.StringVar(&InputRunCommand.BatchInputFile, `batch`, ``, `File patch for batch build of templates found in JSON file. May affect some other params. Format: [{"input":"","output":"","data":[]},{"input":"","output":""}] [Optional].`)
 }
 
 // InputRunCommand options for run command stored here
