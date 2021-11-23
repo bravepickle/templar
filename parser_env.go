@@ -47,7 +47,7 @@ func (p EnvParser) ParseFromString(data string) map[string]string {
 				log.Printf("Failed to read key-value from line: \"%s\"\n", substr)
 			}
 		} else {
-			result[strings.TrimSpace(split[0])] = strings.TrimSpace(split[1])
+			result[strings.TrimSpace(split[0])] = strings.Trim(strings.TrimSpace(split[1]), `"`)
 		}
 	}
 
