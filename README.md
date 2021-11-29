@@ -6,9 +6,8 @@ Press *Ctrl+D* to stop writing to STDIN interactively
 See also GOLANG (template engine docs)[https://golang.org/pkg/html/template/]
 
 ## Additional template functions
-- sub - subtract one value from another (int): `{{ sub .num 4 }}`
-- sum - sum of two values (int): `{{ sum .num 1 }}`
-- repeat - repeat n times: `{{ repeat 3 "Hurray! " }}`
+- for now uses https://masterminds.github.io/sprig/ for additional functions supported
+- regular templating functions for Golang packages also supported. See official docs for `text/template`, `html/template` packages.
 
 See also (default functions and usages)[https://golang.org/pkg/text/template/#hdr-Functions]
 
@@ -23,6 +22,8 @@ See also (default functions and usages)[https://golang.org/pkg/text/template/#hd
 - [ ] Support all formats specified
 - [ ] Specify in docs all available template functions
 - [ ] Support configs that contain multiple templates to generate - some kind of templates aggregator to easily template files in batches
+- [ ] Support both html and text formatters, e.g. by adding flag `templar build --html ...` to a command. By default, use text
+- [ ] Add raw|unescape function to FuncMap for html text formatting. Should skip HTML escapes for `html/template` package. E.g. `return template.HTML(text)`. 
 
 ## Usage
 ```
