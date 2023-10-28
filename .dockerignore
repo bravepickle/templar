@@ -1,0 +1,7 @@
+.git
+.gitignore
+.gitkeep
+.cache
+.idea
+.vscode
+/templar
