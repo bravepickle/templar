@@ -7,7 +7,7 @@ import (
 
 // JSONParser Parsing environment params
 type JSONParser struct {
-	Params interface{}
+	Params any
 }
 
 // GetParams read all params from parser
@@ -60,14 +60,6 @@ func (p JSONParser) ParseFromString(data string) interface{} {
 func NewJSONParser(rawData string) JSONParser {
 	var parser JSONParser
 	parser.Params = parser.ParseFromString(rawData)
-
-	// for key, val := range parser.GetParams() {
-	// 	log.Println(`Val4 => `, val)
-	// 	log.Println(`Key4 => `, key)
-	//
-	// 	// result[val] = val
-	// 	// count++
-	// }
 
 	return parser
 }
