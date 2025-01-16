@@ -1,7 +1,0 @@
-[
-  {
-    "input": "testdata/build/input.tpl",
-    "output": "testdata/build/templar.actual.txt",
-    "data": {"name": "Johnny"}
-  }
-]
