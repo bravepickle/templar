@@ -14,7 +14,7 @@ import (
 // InputRunCommandStruct contains variables with all options for input of build command
 type InputRunCommandStruct struct {
 	InputFile, OutputFile, InputFormat, TemplateFile, BatchInputFile, WorkingDirectory string
-	Help, HelpAlias                                                                    bool
+	Help, HelpAlias, SkipExisting                                                      bool
 }
 
 // UseBatchInput returns flag if batch input was used
@@ -257,7 +257,7 @@ func doBuild() {
 		}
 
 		for _, item := range batchData {
-			buildTemplate(item.Input, item.Output, item.Data)
+			buildTemplate(item.Input, item.Output, item.Data, InputRunCommand.SkipExisting)
 		}
 
 		return
@@ -289,15 +289,27 @@ func doBuild() {
 		params = parser.GetParams()
 	}
 
-	buildTemplate(templateFile, outputFile, params)
+	buildTemplate(templateFile, outputFile, params, InputRunCommand.SkipExisting)
 }
 
 func buildTemplate(
 	templateFile string,
 	outputFile string,
 	params any,
+	skipExisting bool,
 ) {
 	var err error
+
+	if skipExisting {
+		if _, err = os.Stat(outputFile); !os.IsNotExist(err) {
+			if verbose {
+				log.Printf("Target file %s already exists. Skipping...", outputFile)
+			}
+
+			return
+		}
+	}
+
 	tplContents := readTplContents(templateFile)
 
 	tpl, err := template.New(outputFile).Funcs(funcMap).Parse(tplContents)
@@ -371,15 +383,15 @@ func printRunExamples() {
 		"\n\tCreate out.txt file from tamplate passed through STDIN aka piping."+
 		"\n\tIf no STDIN is passed, then text can be typed directly and finished with Ctrl+D keystroke."+
 		"\n\tDefault behavior when template is not specified.\n", cmdName)
-	fmt.Printf("    echo 'Buy me {{ .ApplesCount }}.' | %s build --format=env --input=./data.env"+
+	fmt.Printf("    echo 'Buy me {{ .ApplesCount }} apples.' | %s build --format=env --input=./data.env"+
 		"\n\tOutputs rendered template from STDIN to STDOUT.\n", cmdName)
-	fmt.Printf("    %s build --format=env --output=./out.txt"+
-		"\n\tOutputs rendered template from STDIN to ./out.txt and sets template params from OS ENV.\n", cmdName)
+	fmt.Printf("    %s build --format=env --output=./out.txt --skip"+
+		"\n\tOutputs rendered template from STDIN to ./out.txt and sets template params from OS ENV, if target file does not exist.\n", cmdName)
 }
 
 func initRunCommand() {
 	runCommand = flag.NewFlagSet(`build`, flag.ExitOnError)
-	runCommand.StringVar(&InputRunCommand.InputFormat, `format`, `json`, `Input file format [Optional]. Supported values: env, json, key-value.`) // help := flag.Bool(`h`, value, usage)
+	runCommand.StringVar(&InputRunCommand.InputFormat, `format`, `json`, `Input file format [Optional]. Supported values: env, json, key-value.`)
 	runCommand.BoolVar(&InputRunCommand.Help, `h`, false, `Print command usage sub-options [Optional].`)
 	runCommand.BoolVar(&InputRunCommand.HelpAlias, `help`, false, `Print command usage sub-options [Optional].`)
 	runCommand.StringVar(&InputRunCommand.InputFile, `input`, ``, `Input file to read params from [Optional].`)
@@ -387,6 +399,7 @@ func initRunCommand() {
 	runCommand.StringVar(&InputRunCommand.TemplateFile, `template`, ``, `Template file to render [Optional].`)
 	runCommand.StringVar(&InputRunCommand.WorkingDirectory, `d`, ``, `Working directory for files [Optional].`)
 	runCommand.StringVar(&InputRunCommand.BatchInputFile, `batch`, ``, `File path for batch build of templates found in JSON file. May affect some other params. Format: [{"input":"","output":"","data":[]},{"input":"","output":""}] [Optional].`)
+	runCommand.BoolVar(&InputRunCommand.SkipExisting, `skip`, false, `Skip building template if target file already exists.`)
 }
 
 // InputRunCommand options for run command stored here
