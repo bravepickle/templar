@@ -8,7 +8,6 @@ import (
 	"io"
 	"log"
 	"os"
-	// "html/template"
 	"text/template"
 )
 
@@ -191,37 +190,28 @@ func openOutputWriter(outputFile string) (output io.Writer, file *os.File) {
 	var err error
 
 	if InputRunCommand.UseStdOut() {
-		fmt.Println("Use STDOUT ", outputFile)
-
 		output = os.Stdout
 	} else if verbose {
-		fmt.Println("Creating file in verbose mode ", outputFile)
 		err = createFile(outputFile)
 		if err != nil {
 			log.Fatal(err)
-			os.Exit(1)
 		}
 
 		file, err = os.OpenFile(outputFile, os.O_WRONLY|os.O_TRUNC, 0644)
 		if err != nil {
 			log.Fatal(err)
-			os.Exit(1)
 		}
 
 		output = io.MultiWriter(file, os.Stdout)
 	} else {
-		fmt.Println("Creating file ", outputFile)
-
 		err = createFile(outputFile)
 		if err != nil {
 			log.Fatal(err)
-			os.Exit(1)
 		}
 
 		file, err = os.OpenFile(outputFile, os.O_WRONLY|os.O_TRUNC, 0644)
 		if err != nil {
 			log.Fatal(err)
-			os.Exit(1)
 		}
 
 		output = file
@@ -260,31 +250,15 @@ func doBuild() {
 
 	if InputRunCommand.UseBatchInput() {
 		contents := readInputFileContents(InputRunCommand.BatchInputFile)
-
-		fmt.Println("Batch contents:", contents)
-
 		var batchData []batchItem
 
 		if err = json.Unmarshal([]byte(contents), &batchData); err != nil {
 			log.Fatalf("Failed reading batch file: %v", err)
 		}
 
-		fmt.Printf("Batch parsed contents:\n%v\n", batchData)
-
 		for _, item := range batchData {
-			//if _, err = os.Stat(item.Input); os.IsNotExist(err) {
-			//	log.Fatalf("Input file %s does not exist", item.Input)
-			//}
-
 			buildTemplate(item.Input, item.Output, item.Data)
 		}
-
-		//inputFile = InputRunCommand.InputFile
-		//outputFile = InputRunCommand.OutputFile
-		//templateFile = InputRunCommand.TemplateFile
-		//inputFormat = InputRunCommand.InputFormat
-		//
-		//buildTemplate(templateFile, outputFile, inputFile, inputFormat)
 
 		return
 	}
@@ -324,8 +298,6 @@ func buildTemplate(
 	params any,
 ) {
 	var err error
-	//var contents string
-
 	tplContents := readTplContents(templateFile)
 
 	tpl, err := template.New(outputFile).Funcs(funcMap).Parse(tplContents)
@@ -343,16 +315,9 @@ func buildTemplate(
 		}()
 	}
 
-	fmt.Println("Building Template", tplContents)
-	fmt.Printf("Output file: %s\nParams: %v\nOutput: %v\n", outputFile, params, output)
-
-	//buf := new(bytes.Buffer)
 	if err = tpl.Execute(output, params); err != nil {
-		//if err = tpl.Execute(buf, params); err != nil {
 		log.Fatal(err, params)
 	}
-
-	//fmt.Println("Written output: ", buf.String())
 }
 
 func createFile(path string) (err error) {
@@ -369,7 +334,12 @@ func createFile(path string) (err error) {
 		if err != nil {
 			return err
 		}
-		defer file.Close()
+		defer func() {
+			if err = file.Close(); err != nil {
+				log.Println(`ERROR: failed to close file:`, err)
+			}
+		}()
+
 		if verbose {
 			log.Println(`File created`)
 		}
