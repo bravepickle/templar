@@ -353,6 +353,7 @@ func createFile(path string) (err error) {
 	return err
 }
 
+// printRunUsage prints usage
 func printRunUsage() {
 	fmt.Printf("Usage: %s [OPTIONS] build [COMMAND_OPTIONS] \n", InputCommon.CommandName)
 	runCommand.PrintDefaults()
