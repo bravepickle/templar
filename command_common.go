@@ -52,8 +52,8 @@ func printExamples() {
 	fmt.Printf("    %s init    Initialize current working directory as new project\n", cmdName)
 	fmt.Printf("    %s --verbose\n\tinit Initialize new project in verbose mode\n", cmdName)
 	fmt.Printf("    %s build --format=env -d /tmp --format=env --input=./data.env --batch ./batch.json Build templates batch from file\n", cmdName)
-	fmt.Printf("    %s build --format=env --input=./data.env --template=./templates/test.tpl --output=./out.txt"+
-		"\n\t Create out.txt file from test.tpl and environment parameters found in data.env file\n", cmdName)
+	fmt.Printf("    %s build --format=env --input=./data.env --template=./templates/test.tpl --output=./out.txt --skip"+
+		"\n\t Create out.txt file from test.tpl and environment parameters found in data.env file, if target file does not exist\n", cmdName)
 }
 
 // InputCommon basic options for running application
