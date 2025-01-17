@@ -2,14 +2,13 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
-	// "html/template"
-	"text/template"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
+	"text/template"
 )
 
 // InputRunCommandStruct contains variables with all options for input of build command
@@ -18,7 +17,7 @@ type InputRunCommandStruct struct {
 	Help, HelpAlias                                                                    bool
 }
 
-// UseBatch returns
+// UseBatchInput returns flag if batch input was used
 func (t InputRunCommandStruct) UseBatchInput() bool {
 	return t.BatchInputFile != ``
 }
@@ -30,12 +29,12 @@ func (t InputRunCommandStruct) HasWorkDir() bool {
 
 // UseStdIn Use STDIN for template data input
 func (t InputRunCommandStruct) UseStdIn() bool {
-	return t.TemplateFile == ``
+	return t.TemplateFile == `` && !t.UseBatchInput()
 }
 
 // UseStdOut Use STDOUT for rendered template data output
 func (t InputRunCommandStruct) UseStdOut() bool {
-	return t.OutputFile == ``
+	return t.OutputFile == `` && !t.UseBatchInput()
 }
 
 // ShowHelp Print command usage
@@ -68,7 +67,7 @@ func prepareBuildVars() {
 		}
 	}
 
-	if !InputRunCommand.UseBatchInput() {
+	if InputRunCommand.UseBatchInput() {
 		batchInputFile, err = RealPath(InputRunCommand.BatchInputFile, InputRunCommand.WorkingDirectory)
 		if err != nil {
 			log.Fatal(err)
@@ -81,12 +80,12 @@ func prepareBuildVars() {
 	InputRunCommand.BatchInputFile = batchInputFile
 
 	if verbose {
-		log.Println(`Read params from:`, InputRunCommand.InputFile)
-		log.Println(`Read input format:`, InputRunCommand.InputFormat)
-
 		if InputRunCommand.UseBatchInput() {
 			log.Println(`Templates to build from batch file:`, InputRunCommand.BatchInputFile)
 		} else {
+			log.Println(`Read params from:`, InputRunCommand.InputFile)
+			log.Println(`Read input format:`, InputRunCommand.InputFormat)
+
 			log.Println(`Output rendered data to:`, InputRunCommand.OutputFile)
 			if InputRunCommand.UseStdIn() {
 				log.Println(`Template to render: STDIN`)
@@ -99,14 +98,14 @@ func prepareBuildVars() {
 
 func readContentsFromFile(filepath string) string {
 	if verbose {
-		log.Println(`Attempting to read template contents from file...`)
+		log.Printf("Attempting to read template contents from file %s...\n", filepath)
 	}
 
 	if stat, err := os.Stat(filepath); err != nil || stat.Mode().IsRegular() == false {
 		log.Fatal(`File is invalid for reading: `, filepath)
 	}
 
-	rawFile, err := ioutil.ReadFile(filepath)
+	rawFile, err := os.ReadFile(filepath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -196,13 +195,11 @@ func openOutputWriter(outputFile string) (output io.Writer, file *os.File) {
 		err = createFile(outputFile)
 		if err != nil {
 			log.Fatal(err)
-			os.Exit(1)
 		}
 
 		file, err = os.OpenFile(outputFile, os.O_WRONLY|os.O_TRUNC, 0644)
 		if err != nil {
 			log.Fatal(err)
-			os.Exit(1)
 		}
 
 		output = io.MultiWriter(file, os.Stdout)
@@ -210,13 +207,11 @@ func openOutputWriter(outputFile string) (output io.Writer, file *os.File) {
 		err = createFile(outputFile)
 		if err != nil {
 			log.Fatal(err)
-			os.Exit(1)
 		}
 
 		file, err = os.OpenFile(outputFile, os.O_WRONLY|os.O_TRUNC, 0644)
 		if err != nil {
 			log.Fatal(err)
-			os.Exit(1)
 		}
 
 		output = file
@@ -228,7 +223,7 @@ func openOutputWriter(outputFile string) (output io.Writer, file *os.File) {
 func readInputFileContents(inputFile string) (result string) {
 	assertFileReadable(inputFile)
 
-	contents, err := ioutil.ReadFile(inputFile)
+	contents, err := os.ReadFile(inputFile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -242,36 +237,68 @@ func readInputFileContents(inputFile string) (result string) {
 	return result
 }
 
+type batchItem struct {
+	Input  string `json:"input"`
+	Output string `json:"output"`
+	Data   any    `json:"data"`
+}
+
 func doBuild() {
 	var err error
-	var inputFile, outputFile, templateFile, inputFormat, contents string
-	var parser Parser
-
+	var inputFile, outputFile, templateFile, inputFormat string
 	prepareBuildVars()
+
+	if InputRunCommand.UseBatchInput() {
+		contents := readInputFileContents(InputRunCommand.BatchInputFile)
+		var batchData []batchItem
+
+		if err = json.Unmarshal([]byte(contents), &batchData); err != nil {
+			log.Fatalf("Failed reading batch file: %v", err)
+		}
+
+		for _, item := range batchData {
+			buildTemplate(item.Input, item.Output, item.Data)
+		}
+
+		return
+	}
 
 	inputFile = InputRunCommand.InputFile
 	outputFile = InputRunCommand.OutputFile
 	templateFile = InputRunCommand.TemplateFile
 	inputFormat = InputRunCommand.InputFormat
 
-	tplContents := readTplContents(templateFile)
-
+	var params any
 	if inputFile != `` {
-		contents = readInputFileContents(inputFile)
+		var parser Parser
+		contents := readInputFileContents(inputFile)
+
+		switch inputFormat {
+		case `env`:
+			parser = NewEnvParser(contents)
+		case `json`:
+			parser = NewJSONParser(contents)
+		default:
+			log.Fatal(`Format not supported: `, inputFormat)
+		}
+
+		if verbose {
+			dumpParsedValues(parser)
+		}
+
+		params = parser.GetParams()
 	}
 
-	switch inputFormat {
-	case `env`:
-		parser = NewEnvParser(contents)
-	case `json`:
-		parser = NewJSONParser(contents)
-	default:
-		log.Fatal(`Format not supported: `, inputFormat)
-	}
+	buildTemplate(templateFile, outputFile, params)
+}
 
-	if verbose {
-		dumpParsedValues(parser)
-	}
+func buildTemplate(
+	templateFile string,
+	outputFile string,
+	params any,
+) {
+	var err error
+	tplContents := readTplContents(templateFile)
 
 	tpl, err := template.New(outputFile).Funcs(funcMap).Parse(tplContents)
 	if err != nil {
@@ -281,11 +308,15 @@ func doBuild() {
 	output, file := openOutputWriter(outputFile)
 
 	if file != nil {
-		defer file.Close()
+		defer func() {
+			if err := file.Close(); err != nil {
+				log.Fatal(err)
+			}
+		}()
 	}
 
-	if err = tpl.Execute(output, parser.GetParams()); err != nil {
-		log.Fatal(err, parser.GetParams())
+	if err = tpl.Execute(output, params); err != nil {
+		log.Fatal(err, params)
 	}
 }
 
@@ -303,7 +334,12 @@ func createFile(path string) (err error) {
 		if err != nil {
 			return err
 		}
-		defer file.Close()
+		defer func() {
+			if err = file.Close(); err != nil {
+				log.Println(`ERROR: failed to close file:`, err)
+			}
+		}()
+
 		if verbose {
 			log.Println(`File created`)
 		}
@@ -317,6 +353,7 @@ func createFile(path string) (err error) {
 	return err
 }
 
+// printRunUsage prints usage
 func printRunUsage() {
 	fmt.Printf("Usage: %s [OPTIONS] build [COMMAND_OPTIONS] \n", InputCommon.CommandName)
 	runCommand.PrintDefaults()
@@ -349,7 +386,7 @@ func initRunCommand() {
 	runCommand.StringVar(&InputRunCommand.OutputFile, `output`, ``, `Output file to render to [Optional].`)
 	runCommand.StringVar(&InputRunCommand.TemplateFile, `template`, ``, `Template file to render [Optional].`)
 	runCommand.StringVar(&InputRunCommand.WorkingDirectory, `d`, ``, `Working directory for files [Optional].`)
-	runCommand.StringVar(&InputRunCommand.BatchInputFile, `batch`, ``, `File patch for batch build of templates found in JSON file. May affect some other params. Format: [{"input":"","output":"","data":[]},{"input":"","output":""}] [Optional].`)
+	runCommand.StringVar(&InputRunCommand.BatchInputFile, `batch`, ``, `File path for batch build of templates found in JSON file. May affect some other params. Format: [{"input":"","output":"","data":[]},{"input":"","output":""}] [Optional].`)
 }
 
 // InputRunCommand options for run command stored here

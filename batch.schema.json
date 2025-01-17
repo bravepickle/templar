@@ -1,0 +1,18 @@
+{
+  "title" : "Templar batch items schema",
+  "description" : "Is used for transforming data to proper structure. Fields order are mandatory to follow. Also, can be used to validate the generated JSONs",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "/schemas/predictor.schema.json",
+  "type": "array",
+  "items" : {
+    "type": "object",
+    "title": "Batch config item",
+    "required": ["input", "output"],
+    "properties": {
+      "input": {"type": "string", "title": "Template file path"},
+      "output": {"type": "string", "title": "Output file path"},
+      "data": {"type": ["array", "object"], "title": "Template variables"}
+    }
+  },
+  "minItems" : 1
+}

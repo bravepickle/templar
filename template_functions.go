@@ -8,7 +8,6 @@ import (
 	"github.com/Masterminds/sprig"
 )
 
-
 // here we store all additional functions for rendering templates
 
 // // sum sums 2 values
