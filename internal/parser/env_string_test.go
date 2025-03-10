@@ -22,5 +22,4 @@ foo = bar
 
 	must.NoError(err)
 	must.Equal(expected, actual)
-
 }
