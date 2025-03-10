@@ -6,6 +6,10 @@ import (
 	"os"
 )
 
+var AppVersion string
+var GitCommitHash string
+var AppConfigsDir string
+
 // Parser interface is a common parser interface for all input formats
 type Parser interface {
 	GetParams() interface{}
@@ -40,7 +44,6 @@ func main() {
 			index := CommandIndexArg(`build`)
 			if index == -1 {
 				log.Fatal(`Not found command position`)
-				os.Exit(1)
 			}
 
 			runCommand.Parse(os.Args[index+1:])
@@ -56,7 +59,6 @@ func main() {
 			index := CommandIndexArg(`init`)
 			if index == -1 {
 				log.Fatal(`Not found command position`)
-				os.Exit(1)
 			}
 
 			initCommand.Parse(os.Args[index+1:])

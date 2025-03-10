@@ -9,6 +9,8 @@ import (
 	"log"
 	"os"
 	"text/template"
+
+	parser2 "github.com/bravepickle/templar/internal/parser"
 )
 
 // InputRunCommandStruct contains variables with all options for input of build command
@@ -101,7 +103,7 @@ func readContentsFromFile(filepath string) string {
 		log.Printf("Attempting to read template contents from file %s...\n", filepath)
 	}
 
-	if stat, err := os.Stat(filepath); err != nil || stat.Mode().IsRegular() == false {
+	if stat, err := os.Stat(filepath); err != nil || !stat.Mode().IsRegular() {
 		log.Fatal(`File is invalid for reading: `, filepath)
 	}
 
@@ -158,7 +160,7 @@ func readTplContents(templateFile string) string {
 }
 
 func assertFileReadable(filename string) {
-	if stat, err := os.Stat(filename); err != nil || stat.Mode().IsRegular() == false {
+	if stat, err := os.Stat(filename); err != nil || !stat.Mode().IsRegular() {
 		log.Fatal(`Input file is invalid for reading: `, filename)
 	}
 }
@@ -275,9 +277,9 @@ func doBuild() {
 
 		switch inputFormat {
 		case `env`:
-			parser = NewEnvParser(contents)
+			parser = parser2.NewEnvParser(contents)
 		case `json`:
-			parser = NewJSONParser(contents)
+			parser = parser2.NewJSONParser(contents)
 		default:
 			log.Fatal(`Format not supported: `, inputFormat)
 		}
