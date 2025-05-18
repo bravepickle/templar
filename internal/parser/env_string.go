@@ -7,7 +7,11 @@ import (
 )
 
 // EnvParser parsing environment params from string
-type EnvParser struct{}
+type EnvParser struct {
+	// WithOsEnv defines if OS environment variables should be checked.
+	// If enabled, OS env will have higher priority
+	//WithOsEnv bool
+}
 
 // Parse parses key-values from string and puts it to struct
 func (p EnvParser) Parse(in string) (Params, error) {
@@ -29,3 +33,9 @@ func (p EnvParser) Parse(in string) (Params, error) {
 func NewEnvParser() EnvParser {
 	return EnvParser{}
 }
+
+//
+//// NewEnvParser creates parser and parses raw data string
+//func NewEnvParser(withOsEnv bool) EnvParser {
+//	return EnvParser{withOsEnv}
+//}

@@ -11,9 +11,10 @@ var GitCommitHash string
 var AppConfigsDir string
 
 // Parser interface is a common parser interface for all input formats
-type Parser interface {
-	GetParams() interface{}
-}
+//type Parser interface {
+//	// Parse reads params from source and returns them as a result
+//	Parse() interface{}
+//}
 
 func init() {
 	initCommands()
@@ -28,10 +29,12 @@ func main() {
 			index := CommandIndexArg(`list`)
 			if index == -1 {
 				log.Fatal(`Not found command position`)
-				os.Exit(1)
+				//os.Exit(1)
 			}
 
-			listCommand.Parse(os.Args[index+1:])
+			if err := listCommand.Parse(os.Args[index+1:]); err != nil {
+				log.Fatal(err)
+			}
 
 			if InputListCommand.ShowHelp() {
 				printListUsage()
@@ -46,14 +49,18 @@ func main() {
 				log.Fatal(`Not found command position`)
 			}
 
-			runCommand.Parse(os.Args[index+1:])
+			if err := runCommand.Parse(os.Args[index+1:]); err != nil {
+				log.Fatal(err)
+			}
 
 			if InputRunCommand.ShowHelp() {
 				printRunUsage()
 				os.Exit(0)
 			}
 
-			doBuild()
+			if err := doBuild(); err != nil {
+				log.Fatal(err)
+			}
 			os.Exit(0)
 		case "init":
 			index := CommandIndexArg(`init`)
@@ -61,7 +68,9 @@ func main() {
 				log.Fatal(`Not found command position`)
 			}
 
-			initCommand.Parse(os.Args[index+1:])
+			if err := initCommand.Parse(os.Args[index+1:]); err != nil {
+				log.Fatal(err)
+			}
 
 			if InputInitCommand.ShowHelp() {
 				printInitUsage()
