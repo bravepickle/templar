@@ -42,7 +42,7 @@ type Subcommand interface {
 	Run() error
 
 	// Usage show command usage. See flag.Usage
-	Usage() (string, error)
+	Usage() error
 }
 
 // Command CLI command input options
@@ -82,8 +82,8 @@ type Command struct {
 	// Args contain all command arguments
 	Args []string
 
-	// Flags results of parsing CLI command arguments excluding Subcommand
-	Flags *flag.FlagSet
+	// fs results of parsing CLI command arguments excluding Subcommand
+	fs *flag.FlagSet
 
 	// Subcommand is a subcommand to run
 	Subcommand Subcommand
@@ -101,24 +101,59 @@ type Command struct {
 }
 
 func (c *Command) Init() error {
+	c.fs = flag.NewFlagSet(c.Name, flag.ContinueOnError)
+	c.fs.SetOutput(c.Output)
+	c.fs.BoolVar(&c.NoColor, "nocolor", false, "disable color and styles output")
+	c.fs.BoolVar(&c.Debug, "debug", false, "debug mode")
+	c.fs.BoolVar(&c.Verbose, "verbose", false, "verbose output")
+
 	c.commands = append(
 		c.commands,
 		&VersionSubcommand{},
 	)
 
-	//var err error
-	//for _, sub := range c.commands {
-	//	if err = sub.Init(c, nil); err != nil {
-	//		return fmt.Errorf("%s %s init: %w", c.Name, sub.Name(), err)
-	//	}
-	//}
+	var err error
+	for _, sub := range c.commands {
+		if err = sub.Init(c, nil); err != nil {
+			return fmt.Errorf("%s %s init: %w", c.Name, sub.Name(), err)
+		}
+	}
+
+	return nil
+}
+
+func (c *Command) Usage() error {
+	if c.fs == nil {
+		return errors.New(`argument flags is not defined`)
+	}
+
+	c.Fmt.Printf("Usage: <debug>%s [OPTIONS] COMMAND [COMMAND_ARGS]<reset>\n\n", c.Name)
+
+	c.Fmt.Println(`<info>Arguments:<reset>`)
+	c.Fmt.Printf("  <debug>%-10s<reset>\tshow this help\n", SubCommandHelp)
+	c.Fmt.Printf("  <debug>%-10s<reset>\tshow application information\n", SubCommandVersion)
+	c.Fmt.Printf("  <debug>%-10s<reset>\tinit default files structure for building templates\n", SubCommandInit)
+	c.Fmt.Printf("  <debug>%-10s<reset>\trenders files from templates and configs\n", SubCommandBuild)
+	c.Fmt.Println(``)
+
+	c.Fmt.Println(`<info>Options:<reset>`)
+	c.fs.PrintDefaults()
+	c.Fmt.Println(``)
+
+	c.Fmt.Println(`<info>Commands:<reset>`)
+
+	var err error
+	for _, sub := range c.commands {
+		if err = sub.Usage(); err != nil {
+			return fmt.Errorf("%s: %w", sub.Name(), err)
+		}
+	}
 
 	return nil
 }
 
 func (c *Command) Run() error {
 	var sub Subcommand
-	//subIndex := 0
 	var cmdArgs []string
 	var subArgs []string
 
@@ -126,63 +161,31 @@ func (c *Command) Run() error {
 		for _, sc := range c.commands {
 			if sc.Name() == arg {
 				sub = sc
-
-				//if len(c.Args) > k+1 {
 				subArgs = c.Args[k+1:]
 				cmdArgs = c.Args[0:k]
-				//} else {
-				//	if k > 0 {
-				//		cmdArgs = c.Args[0:k]
-				//	} else {
-				//		cmdArgs = c.Args[0:1]
-				//	}
-				//	subArgs = []string{}
-				//}
-				//subIndex = k
 			}
 		}
-		//switch arg {
-		//case SubCommandVersion:
-		//	sub = &VersionSubcommand{}
-		//	subIndex = k
-		//	break
-		//	// TODO
-		//	//return errors.New("TBD: Command " + arg)
-		//case SubCommandHelp:
-		//	// TODO
-		//	return errors.New("TBD: Command " + arg)
-		//case SubCommandInit:
-		//	// TODO
-		//	return errors.New("TBD: Command " + arg)
-		//case SubCommandBuild:
-		//	return errors.New("TBD: Command " + arg)
-		//default:
-		//	// continue traversing
-		//}
 	}
-
-	fs := flag.NewFlagSet(c.Name, flag.ContinueOnError)
-	fs.SetOutput(c.Output)
-	fs.BoolVar(&c.NoColor, "nocolor", false, "disable color and styles output")
-	fs.BoolVar(&c.Debug, "debug", false, "debug mode")
-	fs.BoolVar(&c.Verbose, "verbose", false, "verbose output")
-	fs.BoolVar(&c.Quiet, "quiet", false, "suppress output messages")
 
 	var err error
 	if sub == nil {
 		//c.Usage()
 		// TODO: help sub cmd show
 
-		if err = fs.Parse(c.Args); err != nil {
+		if err = c.fs.Parse(c.Args); err != nil {
 			return fmt.Errorf("%s parse flags: %w", c.Name, err)
 		}
 
 		// update formatter coloring scheme
 		c.Fmt.NoColor = c.NoColor
 		c.Fmt.Init()
+
+		if err = c.Usage(); err != nil {
+			return fmt.Errorf("%s usage: %w", c.Name, err)
+		}
 	} else {
 		//if err = fs.Parse(c.Args[0:subIndex]); err != nil {
-		if err = fs.Parse(cmdArgs); err != nil {
+		if err = c.fs.Parse(cmdArgs); err != nil {
 			return fmt.Errorf("%s %s parse flags: %w", c.Name, sub.Name(), err)
 		}
 

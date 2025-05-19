@@ -4,25 +4,6 @@ import (
 	"flag"
 )
 
-// Subcommand is a subcommand common interface
-//type Subcommand interface {
-//	Nillable
-//
-//	// Init boots command
-//	//
-//	// Arguments:
-//	//   - name sub-command name
-//	//   - args sub-command input arguments
-//	//   - cmd is a parent command of the sub-command
-//	Init(name string, args []string, cmd Command)
-//
-//	// Name reads subcommand name
-//	Name() string
-//
-//	// Run processes subcommand after Init was run
-//	Run() error
-//}
-
 type VersionSubcommand struct {
 	cmd *Command
 	fs  *flag.FlagSet
@@ -33,20 +14,24 @@ func (c *VersionSubcommand) Name() string {
 }
 
 func (c *VersionSubcommand) usage() {
-	if c.cmd == nil {
-		panic(ErrNoCommand)
-	}
+	//if c.fs == nil {
+	//	panic(ErrNoInit)
+	//}
 
+	c.cmd.Fmt.Printf("<debug>%-15s<reset> show application information on its build version and directories\n\n", c.Name())
+	c.cmd.Fmt.Printf("<comment>Examples:<reset>\n  $ %s %s\n\n", c.cmd.Name, c.Name())
+	c.cmd.Fmt.Println("  templar:\n    Version: v0.0.1\n    GIT commit: c7a8949\n    Working directory:   /usr/local/bin/templar\n")
+	//c.fs.PrintDefaults()
 }
 
-func (c *VersionSubcommand) Usage() (string, error) {
+func (c *VersionSubcommand) Usage() error {
 	if c.fs == nil {
-		return "", ErrNoInit
+		return ErrNoInit
 	}
 
-	c.fs.Usage()
+	c.usage()
 
-	return "", nil
+	return nil
 }
 
 func (c *VersionSubcommand) Init(cmd *Command, _ []string) error {

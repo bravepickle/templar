@@ -79,9 +79,7 @@ func (f *PrinterFormatter) Println(msg string, args ...any) {
 		msg = strings.ReplaceAll(msg, k, v)
 	}
 
-	if _, err := fmt.Fprintln(f.Writer, append([]any{msg}, args...)); err != nil {
-		//if _, err := fmt.Fprintln(f.Writer, append([]any{msg}, args...)); err != nil {
-		//if _, err := fmt.Fprintln(f.Writer, msg, args...); err != nil {
+	if _, err := fmt.Fprintln(f.Writer, append([]any{msg}, args...)...); err != nil {
 		panic(fmt.Errorf(`failed to println: %w`, err))
 	}
 }
