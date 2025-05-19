@@ -20,3 +20,5 @@ templar
 /templates/
 *.env
 *.txt
+
+/vendor

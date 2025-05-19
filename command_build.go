@@ -89,7 +89,7 @@ func prepareBuildVars() {
 			log.Println(`Read params from:`, InputRunCommand.InputFile)
 			log.Println(`Read input format:`, InputRunCommand.InputFormat)
 
-			log.Println(`Output rendered data to:`, InputRunCommand.OutputFile)
+			log.Println(`Writer rendered data to:`, InputRunCommand.OutputFile)
 			if InputRunCommand.UseStdIn() {
 				log.Println(`Template to render: STDIN`)
 			} else {
@@ -442,12 +442,13 @@ func initRunCommand() {
 	runCommand.BoolVar(&InputRunCommand.Help, `h`, false, `Print command usage sub-options [Optional].`)
 	runCommand.BoolVar(&InputRunCommand.HelpAlias, `help`, false, `Print command usage sub-options [Optional].`)
 	runCommand.StringVar(&InputRunCommand.InputFile, `input`, ``, `Input file to read params from [Optional].`)
-	runCommand.StringVar(&InputRunCommand.OutputFile, `output`, ``, `Output file to render to [Optional].`)
+	runCommand.StringVar(&InputRunCommand.OutputFile, `output`, ``, `Writer file to render to [Optional].`)
 	runCommand.StringVar(&InputRunCommand.TemplateFile, `template`, ``, `Template file to render [Optional].`)
 	runCommand.StringVar(&InputRunCommand.WorkingDirectory, `d`, ``, `Working directory for files [Optional].`)
 	runCommand.StringVar(&InputRunCommand.BatchInputFile, `batch`, ``, `File path for batch build of templates found in JSON file. May affect some other params. Format: [{"input":"","output":"","data":[]},{"input":"","output":""}] [Optional].`)
 	runCommand.BoolVar(&InputRunCommand.SkipExisting, `skip`, false, `Skip building template if target file already exists.`)
-	runCommand.BoolVar(&InputRunCommand.WithoutOsEnv, `w`, false, `Do not read variables from OS environment.`)
+	runCommand.BoolVar(&InputRunCommand.WithoutOsEnv, `clearenv`, false, `Do not read variables from OS environment.`)
+	//flags.BoolVar(&opts.ClearEnv, "clearenv", false, "clear ENV params before loading .env files. Helps ignoring extra OS params if not needed or obstructing")
 }
 
 // InputRunCommand options for run command stored here
