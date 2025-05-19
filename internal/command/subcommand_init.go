@@ -105,6 +105,18 @@ func (c *InitSubcommand) Run() error {
 		}
 	}
 
+	if err = os.WriteFile(c.cmd.WorkDir+`/variables.env`, []byte(ExampleEnv), 0644); err != nil {
+		return err
+	}
+
+	if err = os.WriteFile(c.cmd.WorkDir+`/variables.json`, []byte(ExampleJson), 0644); err != nil {
+		return err
+	}
+
+	if err = os.WriteFile(c.cmd.WorkDir+`/templates/example.tmpl`, []byte(ExampleTemplate), 0644); err != nil {
+		return err
+	}
+
 	if !c.cmd.Quiet {
 		c.cmd.Fmt.Printf("Templates created: <debug>%s<reset>\n", path)
 	}
