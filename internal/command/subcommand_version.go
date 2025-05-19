@@ -2,7 +2,6 @@ package command
 
 import (
 	"flag"
-	"os"
 )
 
 // Subcommand is a subcommand common interface
@@ -57,6 +56,7 @@ func (c *VersionSubcommand) Init(cmd *Command, _ []string) error {
 
 	c.cmd = cmd
 	c.fs = flag.NewFlagSet(c.Name(), flag.ContinueOnError)
+	c.fs.SetOutput(c.cmd.Output)
 	c.fs.Usage = c.usage
 
 	return nil
@@ -68,12 +68,9 @@ func (c *VersionSubcommand) IsNil() bool {
 
 func (c *VersionSubcommand) Run() error {
 	c.cmd.Fmt.Printf("<info><bold>%s:<reset>\n", c.cmd.Name)
-	c.cmd.Fmt.Printf("  <debug>Version:<reset> %s\n", c.cmd.AppVersion)
-	c.cmd.Fmt.Printf("  <debug>GIT commit:<reset> %s\n", c.cmd.GitCommitHash)
-
-	if c.cmd.App.WorkDir == "" {
-		c.cmd.App.WorkDir, _ = os.Getwd()
-	}
+	c.cmd.Fmt.Printf("  <debug>Version:<reset> %s\n", c.cmd.App.Version)
+	c.cmd.Fmt.Printf("  <debug>GIT commit:<reset> %s\n", c.cmd.App.GitCommitHash)
+	c.cmd.Fmt.Printf("  <debug>Working directory:<reset> %s\n", c.cmd.App.WorkDir)
 
 	return nil
 }

@@ -10,7 +10,7 @@ type Application struct {
 
 func (a *Application) Init() {
 	if a.Version == "" {
-		a.Version = "0.0.0"
+		a.Version = "dev"
 	}
 
 	if a.GitCommitHash == "" {

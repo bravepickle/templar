@@ -97,9 +97,6 @@ type Command struct {
 	// Fmt styler of output
 	Fmt *PrinterFormatter
 
-	AppVersion    string
-	GitCommitHash string
-
 	commands []Subcommand
 }
 
@@ -121,12 +118,27 @@ func (c *Command) Init() error {
 
 func (c *Command) Run() error {
 	var sub Subcommand
-	subIndex := 0
+	//subIndex := 0
+	var cmdArgs []string
+	var subArgs []string
+
 	for k, arg := range c.Args {
 		for _, sc := range c.commands {
 			if sc.Name() == arg {
 				sub = sc
-				subIndex = k
+
+				//if len(c.Args) > k+1 {
+				subArgs = c.Args[k+1:]
+				cmdArgs = c.Args[0:k]
+				//} else {
+				//	if k > 0 {
+				//		cmdArgs = c.Args[0:k]
+				//	} else {
+				//		cmdArgs = c.Args[0:1]
+				//	}
+				//	subArgs = []string{}
+				//}
+				//subIndex = k
 			}
 		}
 		//switch arg {
@@ -149,12 +161,36 @@ func (c *Command) Run() error {
 		//}
 	}
 
+	fs := flag.NewFlagSet(c.Name, flag.ContinueOnError)
+	fs.SetOutput(c.Output)
+	fs.BoolVar(&c.NoColor, "nocolor", false, "disable color and styles output")
+	fs.BoolVar(&c.Debug, "debug", false, "debug mode")
+	fs.BoolVar(&c.Verbose, "verbose", false, "verbose output")
+	fs.BoolVar(&c.Quiet, "quiet", false, "suppress output messages")
+
+	var err error
 	if sub == nil {
 		//c.Usage()
 		// TODO: help sub cmd show
+
+		if err = fs.Parse(c.Args); err != nil {
+			return fmt.Errorf("%s parse flags: %w", c.Name, err)
+		}
+
+		// update formatter coloring scheme
+		c.Fmt.NoColor = c.NoColor
+		c.Fmt.Init()
 	} else {
-		var err error
-		if err = sub.Init(c, c.Args[subIndex:]); err != nil {
+		//if err = fs.Parse(c.Args[0:subIndex]); err != nil {
+		if err = fs.Parse(cmdArgs); err != nil {
+			return fmt.Errorf("%s %s parse flags: %w", c.Name, sub.Name(), err)
+		}
+
+		// update formatter coloring scheme
+		c.Fmt.NoColor = c.NoColor
+		c.Fmt.Init()
+
+		if err = sub.Init(c, subArgs); err != nil {
 			return fmt.Errorf("%s %s init: %w", c.Name, sub.Name(), err)
 		}
 

@@ -8,12 +8,18 @@ import (
 	"github.com/bravepickle/templar/internal/command"
 )
 
-var AppVersion string = "dev"
-var GitCommitHash string = "unknown"
+var AppVersion string
+var GitCommitHash string
 var WorkDir string
 
 func main() {
-	RunCommand(`subCmd`, os.Args[1:], os.Stdout, AppVersion, GitCommitHash, WorkDir)
+	if err := RunCommand(`subCmd`, os.Args[1:], os.Stdout, AppVersion, GitCommitHash, WorkDir); err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+
+		os.Exit(1)
+	}
+
+	os.Exit(0)
 }
 
 func RunCommand(name string, args []string, w io.Writer, version string, commit string, workdir string) error {
