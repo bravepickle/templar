@@ -14,12 +14,16 @@ func (c *VersionSubcommand) Name() string {
 }
 
 func (c *VersionSubcommand) usage() {
-	//if c.fs == nil {
-	//	panic(ErrNoInit)
-	//}
+	if c.fs == nil {
+		panic(ErrNoInit)
+	}
 
-	c.cmd.Fmt.Printf("<debug>%-15s<reset> show application information on its build version and directories\n\n", c.Name())
-	c.cmd.Fmt.Printf("<comment>Examples:<reset>\n  $ %s %s\n\n", c.cmd.Name, c.Name())
+	subName := c.Name()
+	c.cmd.Fmt.Printf("<debug>%-15s<reset> show application information on its build version and directories\n\n", subName)
+	c.cmd.Fmt.Printf("Usage: <debug>%s [OPTIONS] %s<reset>\n", c.cmd.Name, subName)
+	c.cmd.Fmt.Println(``)
+
+	c.cmd.Fmt.Printf("<info>Examples:<reset>\n  $ %s %s\n\n", c.cmd.Name, subName)
 	c.cmd.Fmt.Println("  templar:\n    Version: v0.0.1\n    GIT commit: c7a8949\n    Working directory:   /usr/local/bin/templar\n")
 	//c.fs.PrintDefaults()
 }
@@ -34,7 +38,7 @@ func (c *VersionSubcommand) Usage() error {
 	return nil
 }
 
-func (c *VersionSubcommand) Init(cmd *Command, _ []string) error {
+func (c *VersionSubcommand) Init(cmd *Command, args []string) error {
 	if cmd == nil {
 		return ErrNoCommand
 	}
@@ -44,7 +48,7 @@ func (c *VersionSubcommand) Init(cmd *Command, _ []string) error {
 	c.fs.SetOutput(c.cmd.Output)
 	c.fs.Usage = c.usage
 
-	return nil
+	return c.fs.Parse(args)
 }
 
 func (c *VersionSubcommand) IsNil() bool {
@@ -55,7 +59,7 @@ func (c *VersionSubcommand) Run() error {
 	c.cmd.Fmt.Printf("<info><bold>%s:<reset>\n", c.cmd.Name)
 	c.cmd.Fmt.Printf("  <debug>Version:<reset> %s\n", c.cmd.App.Version)
 	c.cmd.Fmt.Printf("  <debug>GIT commit:<reset> %s\n", c.cmd.App.GitCommitHash)
-	c.cmd.Fmt.Printf("  <debug>Working directory:<reset> %s\n", c.cmd.App.WorkDir)
+	c.cmd.Fmt.Printf("  <debug>Working directory:<reset> %s\n", c.cmd.WorkDir)
 
 	return nil
 }

@@ -30,16 +30,16 @@ func RunCommand(name string, args []string, w io.Writer, version string, commit 
 	app := command.Application{
 		Version:       version,
 		GitCommitHash: commit,
-		WorkDir:       workdir,
 	}
 
 	app.Init()
 
 	cmd := command.NewCommand(command.NewCommandOpts{
-		Name:   name,
-		Args:   args,
-		Output: w,
-		App:    app,
+		Name:    name,
+		Args:    args,
+		Output:  w,
+		WorkDir: workdir,
+		App:     app,
 	})
 
 	if err := cmd.Init(); err != nil {

@@ -1,11 +1,8 @@
 package command
 
-import "os"
-
 type Application struct {
 	Version       string
 	GitCommitHash string
-	WorkDir       string
 }
 
 func (a *Application) Init() {
@@ -15,9 +12,5 @@ func (a *Application) Init() {
 
 	if a.GitCommitHash == "" {
 		a.GitCommitHash = "<unknown>"
-	}
-
-	if a.WorkDir == "" {
-		a.WorkDir, _ = os.Getwd()
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
 )
 
 const (
@@ -73,8 +74,8 @@ type Command struct {
 	// Configuration for processing user resolution and other
 	// ConfigFile string
 
-	//// Configuration for processing user resolution and other
-	//WorkDir string
+	// Configuration for processing user resolution and other
+	WorkDir string
 
 	// Name is a name for the command. E.g., os.Args[0]
 	Name string
@@ -101,18 +102,24 @@ type Command struct {
 }
 
 func (c *Command) Init() error {
+	pwd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
 	c.fs = flag.NewFlagSet(c.Name, flag.ContinueOnError)
 	c.fs.SetOutput(c.Output)
 	c.fs.BoolVar(&c.NoColor, "nocolor", false, "disable color and styles output")
 	c.fs.BoolVar(&c.Debug, "debug", false, "debug mode")
 	c.fs.BoolVar(&c.Verbose, "verbose", false, "verbose output")
+	c.fs.StringVar(&c.WorkDir, "workdir", pwd, "working directory path")
 
 	c.commands = append(
 		c.commands,
 		&VersionSubcommand{},
+		&InitSubcommand{},
 	)
 
-	var err error
 	for _, sub := range c.commands {
 		if err = sub.Init(c, nil); err != nil {
 			return fmt.Errorf("%s %s init: %w", c.Name, sub.Name(), err)
@@ -140,10 +147,17 @@ func (c *Command) Usage() error {
 	c.fs.PrintDefaults()
 	c.Fmt.Println(``)
 
-	c.Fmt.Println(`<info>Commands:<reset>`)
+	c.Fmt.Println("\n                                   <bold><info>COMMANDS<reset>\n")
 
+	first := true
 	var err error
 	for _, sub := range c.commands {
+		if first {
+			first = false
+		} else {
+			c.Fmt.Println(``)
+		}
+
 		if err = sub.Usage(); err != nil {
 			return fmt.Errorf("%s: %w", sub.Name(), err)
 		}
@@ -220,6 +234,9 @@ type NewCommandOpts struct {
 	// NoColor disables coloring and styling
 	NoColor bool
 
+	// WorkDir working directory
+	WorkDir string
+
 	// App is an application for running command
 	App Application
 }
@@ -227,10 +244,11 @@ type NewCommandOpts struct {
 // NewCommand creates new command
 func NewCommand(opts NewCommandOpts) *Command {
 	return &Command{
-		Name:   opts.Name,
-		Args:   opts.Args,
-		Output: opts.Output,
-		Fmt:    NewPrinterFormatter(opts.NoColor, opts.Output),
-		App:    opts.App,
+		Name:    opts.Name,
+		Args:    opts.Args,
+		Output:  opts.Output,
+		WorkDir: opts.WorkDir,
+		Fmt:     NewPrinterFormatter(opts.NoColor, opts.Output),
+		App:     opts.App,
 	}
 }
