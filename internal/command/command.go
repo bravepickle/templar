@@ -9,6 +9,8 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/bravepickle/templar/internal/core"
 )
 
 const (
@@ -16,7 +18,7 @@ const (
 	SubCommandInit    = "init"
 	SubCommandHelp    = "help"
 	SubCommandBuild   = "build"
-	SubCommandVars    = "vars"
+	//SubCommandVars    = "vars"
 )
 
 var ErrNoCommand = errors.New("command not defined")
@@ -53,7 +55,7 @@ type Subcommand interface {
 
 // Command CLI command input options
 type Command struct {
-	App Application
+	App core.Application
 
 	// Debug mode
 	Debug bool
@@ -101,7 +103,7 @@ type Command struct {
 	Output io.Writer
 
 	// Fmt styler of output
-	Fmt *PrinterFormatter
+	Fmt *core.PrinterFormatter
 
 	commands []Subcommand
 }
@@ -124,6 +126,7 @@ func (c *Command) Init() error {
 		&HelpCommand{},
 		&VersionCommand{},
 		&InitCommand{},
+		&BuildCommand{},
 	)
 
 	for _, sub := range c.commands {
@@ -143,52 +146,14 @@ func (c *Command) Usage() error {
 	c.Fmt.Printf("Usage: <debug>%s [OPTIONS] COMMAND [COMMAND_ARGS]<reset>\n\n", c.Name)
 
 	c.Fmt.Println(`<info>Commands:<reset>`)
-	//c.Fmt.Printf("  <debug>%-10s<reset> show this help. Type optional command argument to see extended information on the command usage\n", SubCommandHelp)
-
-	//first := true
-	//var err error
 	for _, sub := range c.commands {
-		//if first {
-		//	first = false
-		//} else {
-		//	c.Fmt.Println(``)
-		//}
-
 		c.Fmt.Printf("  <debug>%-10s<reset> %s\n", sub.Name(), sub.Summary())
-
-		//if err = sub.Usage(); err != nil {
-		//	return fmt.Errorf("%s: %w", sub.Name(), err)
-		//}
 	}
-
-	//c.Fmt.Println(``)
-
-	//c.Fmt.Printf("  <debug>%-10s<reset>\tshow application information\n", SubCommandVersion)
-	//c.Fmt.Printf("  <debug>%-10s<reset>\tinit default files structure for building templates\n", SubCommandInit)
-	//c.Fmt.Printf("  <debug>%-10s<reset>\trenders files from templates and configs\n", SubCommandBuild)
 	c.Fmt.Println(``)
 
 	c.Fmt.Println(`<info>Options:<reset>`)
 	c.fs.PrintDefaults()
 	c.Fmt.Println(``)
-
-	//c.Fmt.Println("\n                                   <bold><info>COMMANDS<reset>\n")
-
-	//first := true
-	////var err error
-	//for _, sub := range c.commands {
-	//	if first {
-	//		first = false
-	//	} else {
-	//		c.Fmt.Println(``)
-	//	}
-	//
-	//	c.Fmt.Printf("<debug>%-15s<reset> %s", sub.Name(), sub.Summary())
-	//
-	//	//if err = sub.Usage(); err != nil {
-	//	//	return fmt.Errorf("%s: %w", sub.Name(), err)
-	//	//}
-	//}
 
 	return nil
 }
@@ -217,9 +182,6 @@ loop:
 
 	var err error
 	if sub == nil {
-		//c.Usage()
-		// TODO: help sub cmd show
-
 		if err = c.fs.Parse(c.Args); err != nil {
 			return fmt.Errorf("%s parse flags: %w", c.Name, err)
 		}
@@ -232,7 +194,6 @@ loop:
 			return fmt.Errorf("%s usage: %w", c.Name, err)
 		}
 	} else {
-		//if err = fs.Parse(c.Args[0:subIndex]); err != nil {
 		if err = c.fs.Parse(cmdArgs); err != nil {
 			return fmt.Errorf("%s %s parse flags: %w", c.Name, sub.Name(), err)
 		}
@@ -272,7 +233,7 @@ type NewCommandOpts struct {
 	WorkDir string
 
 	// App is an application for running command
-	App Application
+	App core.Application
 }
 
 //func subCommandInit(args []string, c Subcommand, cmd *Command) error {
@@ -295,7 +256,7 @@ func NewCommand(opts NewCommandOpts) *Command {
 		Args:    opts.Args,
 		Output:  opts.Output,
 		WorkDir: opts.WorkDir,
-		Fmt:     NewPrinterFormatter(opts.NoColor, opts.Output),
+		Fmt:     core.NewPrinterFormatter(opts.NoColor, opts.Output),
 		App:     opts.App,
 	}
 }

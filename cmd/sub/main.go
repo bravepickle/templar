@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/bravepickle/templar/internal/command"
+	"github.com/bravepickle/templar/internal/core"
 )
 
 const AppName = "templar"
@@ -27,7 +28,7 @@ func main() {
 func RunCommand(name string, args []string, w io.Writer, version string, commit string, workdir string) error {
 	//fmt.Println("RunCommand:", name, args)
 
-	app := command.Application{
+	app := core.Application{
 		Version:       version,
 		GitCommitHash: commit,
 	}

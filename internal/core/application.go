@@ -1,4 +1,4 @@
-package command
+package core
 
 type Application struct {
 	Version       string
