@@ -12,6 +12,7 @@ type BuildCommand struct {
 	OutputFile   string
 	InputFormat  string
 	TemplateFile string
+	BatchFile    string
 }
 
 func (c *BuildCommand) Name() string {
@@ -61,10 +62,13 @@ func (c *BuildCommand) Init(cmd *Command, args []string) error {
 	c.fs.SetOutput(c.cmd.Output)
 	c.fs.Usage = c.usage
 
-	c.fs.StringVar(&c.InputFile, "in", "", c.cmd.Fmt.Sprintf("input file path. Format should match \"<debug>-format<reset>\" value"))
+	format := c.cmd.Fmt.Sprintf
+
+	c.fs.StringVar(&c.InputFile, "in", "", format("input file path. Format should match \"<debug>-format<reset>\" value"))
 	c.fs.StringVar(&c.InputFormat, "format", "env", "input file format. Allowed: env, json")
-	c.fs.StringVar(&c.OutputFile, "out", "", "output file path, If empty, outputs to stdout")
-	c.fs.StringVar(&c.TemplateFile, "template", "", "template file path, If empty, reads from stdin")
+	c.fs.StringVar(&c.OutputFile, "out", "", format("output file path, If empty, outputs to stdout. If \"<debug>-batch<reset>\" option is used, specifies output directory"))
+	c.fs.StringVar(&c.TemplateFile, "template", "", format("template file path, If empty and \"<debug>-batch<reset>\" not defined, reads from stdin"))
+	c.fs.StringVar(&c.BatchFile, "batch", "", format("build multiple files from templates. Supersedes \"<debug>-template<reset>\", \"<debug>-in<reset>\" options. See examples for details"))
 
 	return c.fs.Parse(args)
 }
