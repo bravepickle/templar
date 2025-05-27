@@ -6,17 +6,17 @@ import (
 	"path/filepath"
 )
 
-type InitSubcommand struct {
+type InitCommand struct {
 	cmd  *Command
 	fs   *flag.FlagSet
 	Help bool
 }
 
-func (c *InitSubcommand) Name() string {
+func (c *InitCommand) Name() string {
 	return SubCommandInit
 }
 
-func (c *InitSubcommand) usage() {
+func (c *InitCommand) usage() {
 	if c.fs == nil {
 		panic(ErrNoInit)
 	}
@@ -34,7 +34,7 @@ func (c *InitSubcommand) usage() {
 	c.cmd.Fmt.Printf("  $ %-40s # init project in custom working directory\n", c.cmd.Name+" --workdir ~/.templar init")
 }
 
-func (c *InitSubcommand) Usage() error {
+func (c *InitCommand) Usage() error {
 	if c.fs == nil {
 		return ErrNoInit
 	}
@@ -44,11 +44,11 @@ func (c *InitSubcommand) Usage() error {
 	return nil
 }
 
-func (c *InitSubcommand) Summary() string {
+func (c *InitCommand) Summary() string {
 	return "init default files structure for building templates"
 }
 
-func (c *InitSubcommand) Init(cmd *Command, args []string) error {
+func (c *InitCommand) Init(cmd *Command, args []string) error {
 	if cmd == nil {
 		return ErrNoCommand
 	}
@@ -62,11 +62,11 @@ func (c *InitSubcommand) Init(cmd *Command, args []string) error {
 	return c.fs.Parse(args)
 }
 
-func (c *InitSubcommand) IsNil() bool {
+func (c *InitCommand) IsNil() bool {
 	return c == nil
 }
 
-func (c *InitSubcommand) Run() error {
+func (c *InitCommand) Run() error {
 	if c.Help {
 		return c.Usage()
 	}

@@ -16,6 +16,7 @@ const (
 	SubCommandInit    = "init"
 	SubCommandHelp    = "help"
 	SubCommandBuild   = "build"
+	SubCommandVars    = "vars"
 )
 
 var ErrNoCommand = errors.New("command not defined")
@@ -120,9 +121,9 @@ func (c *Command) Init() error {
 
 	c.commands = append(
 		c.commands,
-		&HelpSubcommand{},
-		&VersionSubcommand{},
-		&InitSubcommand{},
+		&HelpCommand{},
+		&VersionCommand{},
+		&InitCommand{},
 	)
 
 	for _, sub := range c.commands {

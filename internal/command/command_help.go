@@ -4,23 +4,23 @@ import (
 	"flag"
 )
 
-type HelpSubcommand struct {
+type HelpCommand struct {
 	cmd *Command
 	fs  *flag.FlagSet
 }
 
-func (c *HelpSubcommand) Name() string {
+func (c *HelpCommand) Name() string {
 	return SubCommandHelp
 }
 
-func (c *HelpSubcommand) usage() {
+func (c *HelpCommand) usage() {
 	if c.fs == nil {
 		panic(ErrNoInit)
 	}
 
 	subName := c.Name()
 	c.cmd.Fmt.Printf("<debug>%-15s<reset> %s\n\n", subName, c.Summary())
-	c.cmd.Fmt.Printf("Usage: <debug>%s [OPTIONS] %s [SUBCOMMAND]<reset>\n", c.cmd.Name, subName)
+	c.cmd.Fmt.Printf("Usage: <debug>%s [OPTIONS] %s [COMMAND]<reset>\n", c.cmd.Name, subName)
 	c.cmd.Fmt.Println(``)
 
 	c.cmd.Fmt.Printf("<info>Examples:<reset>\n  $ %s %s %s\n\n", c.cmd.Name, subName, SubCommandVersion)
@@ -31,11 +31,11 @@ func (c *HelpSubcommand) usage() {
 	//c.fs.PrintDefaults()
 }
 
-func (c *HelpSubcommand) Summary() string {
+func (c *HelpCommand) Summary() string {
 	return c.cmd.Fmt.Sprintf("show help information on command or subcommand usage. Type \"<debug>%s %s %s<reset>\" to see help command usage information", c.cmd.Name, c.Name(), c.Name())
 }
 
-func (c *HelpSubcommand) Usage() error {
+func (c *HelpCommand) Usage() error {
 	if c.fs == nil {
 		return ErrNoInit
 	}
@@ -45,7 +45,7 @@ func (c *HelpSubcommand) Usage() error {
 	return nil
 }
 
-func (c *HelpSubcommand) Init(cmd *Command, args []string) error {
+func (c *HelpCommand) Init(cmd *Command, args []string) error {
 	if cmd == nil {
 		return ErrNoCommand
 	}
@@ -62,11 +62,11 @@ func (c *HelpSubcommand) Init(cmd *Command, args []string) error {
 	return c.fs.Parse(args)
 }
 
-func (c *HelpSubcommand) IsNil() bool {
+func (c *HelpCommand) IsNil() bool {
 	return c == nil
 }
 
-func (c *HelpSubcommand) Run() error {
+func (c *HelpCommand) Run() error {
 	if c.fs == nil || !c.fs.Parsed() {
 		//c.usage()
 

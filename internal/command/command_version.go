@@ -4,16 +4,16 @@ import (
 	"flag"
 )
 
-type VersionSubcommand struct {
+type VersionCommand struct {
 	cmd *Command
 	fs  *flag.FlagSet
 }
 
-func (c *VersionSubcommand) Name() string {
+func (c *VersionCommand) Name() string {
 	return SubCommandVersion
 }
 
-func (c *VersionSubcommand) usage() {
+func (c *VersionCommand) usage() {
 	if c.fs == nil {
 		panic(ErrNoInit)
 	}
@@ -28,11 +28,11 @@ func (c *VersionSubcommand) usage() {
 	//c.fs.PrintDefaults()
 }
 
-func (c *VersionSubcommand) Summary() string {
+func (c *VersionCommand) Summary() string {
 	return "show application information on its build version and directories"
 }
 
-func (c *VersionSubcommand) Usage() error {
+func (c *VersionCommand) Usage() error {
 	if c.fs == nil {
 		return ErrNoInit
 	}
@@ -42,7 +42,7 @@ func (c *VersionSubcommand) Usage() error {
 	return nil
 }
 
-func (c *VersionSubcommand) Init(cmd *Command, args []string) error {
+func (c *VersionCommand) Init(cmd *Command, args []string) error {
 	if cmd == nil {
 		return ErrNoCommand
 	}
@@ -55,11 +55,11 @@ func (c *VersionSubcommand) Init(cmd *Command, args []string) error {
 	return c.fs.Parse(args)
 }
 
-func (c *VersionSubcommand) IsNil() bool {
+func (c *VersionCommand) IsNil() bool {
 	return c == nil
 }
 
-func (c *VersionSubcommand) Run() error {
+func (c *VersionCommand) Run() error {
 	c.cmd.Fmt.Printf("<info><bold>%s:<reset>\n", c.cmd.Name)
 	c.cmd.Fmt.Printf("  <debug>Version:<reset> %s\n", c.cmd.App.Version)
 	c.cmd.Fmt.Printf("  <debug>GIT commit:<reset> %s\n", c.cmd.App.GitCommitHash)
