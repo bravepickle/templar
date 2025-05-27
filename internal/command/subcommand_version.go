@@ -19,13 +19,17 @@ func (c *VersionSubcommand) usage() {
 	}
 
 	subName := c.Name()
-	c.cmd.Fmt.Printf("<debug>%-15s<reset> show application information on its build version and directories\n\n", subName)
+	c.cmd.Fmt.Printf("<debug>%-15s<reset> %s\n\n", subName, c.Summary())
 	c.cmd.Fmt.Printf("Usage: <debug>%s [OPTIONS] %s<reset>\n", c.cmd.Name, subName)
 	c.cmd.Fmt.Println(``)
 
 	c.cmd.Fmt.Printf("<info>Examples:<reset>\n  $ %s %s\n\n", c.cmd.Name, subName)
 	c.cmd.Fmt.Println("  templar:\n    Version: v0.0.1\n    GIT commit: c7a8949\n    Working directory:   /usr/local/bin/templar\n")
 	//c.fs.PrintDefaults()
+}
+
+func (c *VersionSubcommand) Summary() string {
+	return "show application information on its build version and directories"
 }
 
 func (c *VersionSubcommand) Usage() error {

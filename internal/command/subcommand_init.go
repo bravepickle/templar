@@ -22,7 +22,7 @@ func (c *InitSubcommand) usage() {
 	}
 
 	subName := c.Name()
-	c.cmd.Fmt.Printf("<debug>%-15s<reset> init default files structure for building templates\n\n", subName)
+	c.cmd.Fmt.Printf("<debug>%-15s<reset> %s\n\n", subName, c.Summary())
 	c.cmd.Fmt.Printf("Usage: <debug>%s [OPTIONS] %s [COMMAND_OPTIONS]<reset>\n\n", c.cmd.Name, subName)
 
 	c.cmd.Fmt.Println(`<info>Options:<reset>`)
@@ -31,7 +31,6 @@ func (c *InitSubcommand) usage() {
 
 	c.cmd.Fmt.Println("<info>Examples:<reset>")
 	c.cmd.Fmt.Printf("  $ %-40s # init project under current working directory\n", c.cmd.Name+" init")
-	c.cmd.Fmt.Printf("  $ %-40s # show command usage help\n", c.cmd.Name+" init -h")
 	c.cmd.Fmt.Printf("  $ %-40s # init project in custom working directory\n", c.cmd.Name+" --workdir ~/.templar init")
 }
 
@@ -43,6 +42,10 @@ func (c *InitSubcommand) Usage() error {
 	c.usage()
 
 	return nil
+}
+
+func (c *InitSubcommand) Summary() string {
+	return "init default files structure for building templates"
 }
 
 func (c *InitSubcommand) Init(cmd *Command, args []string) error {

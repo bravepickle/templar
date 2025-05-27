@@ -24,6 +24,17 @@ func TestRunCommand(t *testing.T) {
 			expectedError: "",
 			expected:      []string{"test-app"},
 		},
+		{
+			name:          "show help version",
+			command:       "test-app",
+			args:          []string{"--nocolor", "help", "version"},
+			expectedError: "",
+			expected: []string{
+				"show application information on its build version and directories",
+				"Usage: test-app [OPTIONS] version",
+				"Examples:",
+			},
+		},
 	}
 
 	for _, d := range datasets {

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 )
 
 const (
@@ -42,8 +43,11 @@ type Subcommand interface {
 	// Run processes subcommand after Init was run
 	Run() error
 
-	// Usage show command usage. See flag.Usage
+	// Usage shows command extended usage description with examples. See flag.Usage
 	Usage() error
+
+	// Summary generates short description for the command
+	Summary() string
 }
 
 // Command CLI command input options
@@ -116,6 +120,7 @@ func (c *Command) Init() error {
 
 	c.commands = append(
 		c.commands,
+		&HelpSubcommand{},
 		&VersionSubcommand{},
 		&InitSubcommand{},
 	)
@@ -136,32 +141,53 @@ func (c *Command) Usage() error {
 
 	c.Fmt.Printf("Usage: <debug>%s [OPTIONS] COMMAND [COMMAND_ARGS]<reset>\n\n", c.Name)
 
-	c.Fmt.Println(`<info>Arguments:<reset>`)
-	c.Fmt.Printf("  <debug>%-10s<reset>\tshow this help\n", SubCommandHelp)
-	c.Fmt.Printf("  <debug>%-10s<reset>\tshow application information\n", SubCommandVersion)
-	c.Fmt.Printf("  <debug>%-10s<reset>\tinit default files structure for building templates\n", SubCommandInit)
-	c.Fmt.Printf("  <debug>%-10s<reset>\trenders files from templates and configs\n", SubCommandBuild)
+	c.Fmt.Println(`<info>Commands:<reset>`)
+	//c.Fmt.Printf("  <debug>%-10s<reset> show this help. Type optional command argument to see extended information on the command usage\n", SubCommandHelp)
+
+	//first := true
+	//var err error
+	for _, sub := range c.commands {
+		//if first {
+		//	first = false
+		//} else {
+		//	c.Fmt.Println(``)
+		//}
+
+		c.Fmt.Printf("  <debug>%-10s<reset> %s\n", sub.Name(), sub.Summary())
+
+		//if err = sub.Usage(); err != nil {
+		//	return fmt.Errorf("%s: %w", sub.Name(), err)
+		//}
+	}
+
+	//c.Fmt.Println(``)
+
+	//c.Fmt.Printf("  <debug>%-10s<reset>\tshow application information\n", SubCommandVersion)
+	//c.Fmt.Printf("  <debug>%-10s<reset>\tinit default files structure for building templates\n", SubCommandInit)
+	//c.Fmt.Printf("  <debug>%-10s<reset>\trenders files from templates and configs\n", SubCommandBuild)
 	c.Fmt.Println(``)
 
 	c.Fmt.Println(`<info>Options:<reset>`)
 	c.fs.PrintDefaults()
 	c.Fmt.Println(``)
 
-	c.Fmt.Println("\n                                   <bold><info>COMMANDS<reset>\n")
+	//c.Fmt.Println("\n                                   <bold><info>COMMANDS<reset>\n")
 
-	first := true
-	var err error
-	for _, sub := range c.commands {
-		if first {
-			first = false
-		} else {
-			c.Fmt.Println(``)
-		}
-
-		if err = sub.Usage(); err != nil {
-			return fmt.Errorf("%s: %w", sub.Name(), err)
-		}
-	}
+	//first := true
+	////var err error
+	//for _, sub := range c.commands {
+	//	if first {
+	//		first = false
+	//	} else {
+	//		c.Fmt.Println(``)
+	//	}
+	//
+	//	c.Fmt.Printf("<debug>%-15s<reset> %s", sub.Name(), sub.Summary())
+	//
+	//	//if err = sub.Usage(); err != nil {
+	//	//	return fmt.Errorf("%s: %w", sub.Name(), err)
+	//	//}
+	//}
 
 	return nil
 }
@@ -171,12 +197,19 @@ func (c *Command) Run() error {
 	var cmdArgs []string
 	var subArgs []string
 
+loop:
 	for k, arg := range c.Args {
+		if strings.HasPrefix(arg, "-") {
+			continue
+		}
+
 		for _, sc := range c.commands {
 			if sc.Name() == arg {
 				sub = sc
 				subArgs = c.Args[k+1:]
 				cmdArgs = c.Args[0:k]
+
+				break loop
 			}
 		}
 	}
@@ -240,6 +273,19 @@ type NewCommandOpts struct {
 	// App is an application for running command
 	App Application
 }
+
+//func subCommandInit(args []string, c Subcommand, cmd *Command) error {
+//	if c == nil || c.IsNil() || cmd == nil {
+//		return ErrNoCommand
+//	}
+//
+//	c.cmd = cmd
+//	c.fs = flag.NewFlagSet(c.Name(), flag.ContinueOnError)
+//	c.fs.SetOutput(c.cmd.Output)
+//	c.fs.Usage = c.usage
+//
+//	return c.fs.Parse(args)
+//}
 
 // NewCommand creates new command
 func NewCommand(opts NewCommandOpts) *Command {

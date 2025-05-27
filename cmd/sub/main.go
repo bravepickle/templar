@@ -25,7 +25,7 @@ func main() {
 }
 
 func RunCommand(name string, args []string, w io.Writer, version string, commit string, workdir string) error {
-	fmt.Println("RunCommand:", name, args)
+	//fmt.Println("RunCommand:", name, args)
 
 	app := command.Application{
 		Version:       version,

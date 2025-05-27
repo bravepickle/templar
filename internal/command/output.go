@@ -54,6 +54,14 @@ func (f *PrinterFormatter) Printf(msg string, args ...any) {
 	}
 }
 
+func (f *PrinterFormatter) Sprintf(msg string, args ...any) string {
+	for k, v := range textStyles {
+		msg = strings.ReplaceAll(msg, k, v)
+	}
+
+	return fmt.Sprintf(msg, args...)
+}
+
 // Print prints out to Stdout and colorized string
 func (f *PrinterFormatter) Print(args ...any) {
 	if len(args) > 0 { // styles only first argument

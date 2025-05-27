@@ -23,7 +23,11 @@ See also (default functions and usages)[https://golang.org/pkg/text/template/#hd
 - [ ] Specify in docs all available template functions
 - [ ] Support configs that contain multiple templates to generate - some kind of templates aggregator to easily template files in batches
 - [ ] Support both html and text formatters, e.g. by adding flag `templar build --html ...` to a command. By default, use text
-- [ ] Add raw|unescape function to FuncMap for html text formatting. Should skip HTML escapes for `html/template` package. E.g. `return template.HTML(text)`. 
+- [ ] Add raw|unescape function to FuncMap for html text formatting. Should skip HTML escapes for `html/template` package. E.g. `return template.HTML(text)`.
+- [ ] On general help list commands with basic description. See `docker compose help` as an example for formatting and texts
+- [ ] On command help view full description. Make new functions for detailed and short description
+- [ ] Add debug command to see all resulting variables available for the template
+- [ ] If debug is disabled then do not show error messages. Instead, show help blocks with non-zero exit code
 
 ## Usage
 ```
