@@ -13,6 +13,7 @@ type BuildCommand struct {
 	InputFormat  string
 	TemplateFile string
 	BatchFile    string
+	SkipExisting bool
 }
 
 func (c *BuildCommand) Name() string {
@@ -62,13 +63,11 @@ func (c *BuildCommand) Init(cmd *Command, args []string) error {
 	c.fs.SetOutput(c.cmd.Output)
 	c.fs.Usage = c.usage
 
-	format := c.cmd.Fmt.Sprintf
-
-	c.fs.StringVar(&c.InputFile, "in", "", format("input file path. Format should match \"<debug>-format<reset>\" value"))
+	c.fs.StringVar(&c.InputFile, "in", "", "input file path. Format should match \"-format\" value")
 	c.fs.StringVar(&c.InputFormat, "format", "env", "input file format. Allowed: env, json")
-	c.fs.StringVar(&c.OutputFile, "out", "", format("output file path, If empty, outputs to stdout. If \"<debug>-batch<reset>\" option is used, specifies output directory"))
-	c.fs.StringVar(&c.TemplateFile, "template", "", format("template file path, If empty and \"<debug>-batch<reset>\" not defined, reads from stdin"))
-	c.fs.StringVar(&c.BatchFile, "batch", "", format("build multiple files from templates. Supersedes \"<debug>-template<reset>\", \"<debug>-in<reset>\" options. See examples for details"))
+	c.fs.StringVar(&c.OutputFile, "out", "", "output file path, If empty, outputs to stdout. If \"-batch\" option is used, specifies output directory")
+	c.fs.StringVar(&c.TemplateFile, "template", "", "template file path, If empty and \"-batch\" not defined, reads from stdin")
+	c.fs.BoolVar(&c.SkipExisting, "skip", false, "skip generation if target files already exist")
 
 	return c.fs.Parse(args)
 }

@@ -81,7 +81,10 @@ type Command struct {
 	// Configuration for processing user resolution and other
 	// ConfigFile string
 
-	// Configuration for processing user resolution and other
+	// DefaultWorkDir is a default working directory
+	DefaultWorkDir string
+
+	// WorkDir is a selected working directory
 	WorkDir string
 
 	// Name is a name for the command. E.g., os.Args[0]
@@ -96,9 +99,6 @@ type Command struct {
 	// Subcommand is a subcommand to run
 	Subcommand Subcommand
 
-	//// Writer CLI commands. If not defined then use os.Stdout
-	//Writer io.Writer
-
 	// Output is the stream to write output to
 	Output io.Writer
 
@@ -109,9 +109,12 @@ type Command struct {
 }
 
 func (c *Command) Init() error {
-	pwd, err := os.Getwd()
-	if err != nil {
-		return err
+	if c.DefaultWorkDir == "" {
+		if pwd, err := os.Getwd(); err != nil {
+			return err
+		} else {
+			c.DefaultWorkDir = pwd
+		}
 	}
 
 	c.fs = flag.NewFlagSet(c.Name, flag.ContinueOnError)
@@ -119,7 +122,7 @@ func (c *Command) Init() error {
 	c.fs.BoolVar(&c.NoColor, "nocolor", false, "disable color and styles output")
 	c.fs.BoolVar(&c.Debug, "debug", false, "debug mode")
 	c.fs.BoolVar(&c.Verbose, "verbose", false, "verbose output")
-	c.fs.StringVar(&c.WorkDir, "workdir", pwd, "working directory path")
+	c.fs.StringVar(&c.WorkDir, "workdir", c.DefaultWorkDir, "working directory path")
 
 	c.commands = append(
 		c.commands,
@@ -129,6 +132,7 @@ func (c *Command) Init() error {
 		&BuildCommand{},
 	)
 
+	var err error
 	for _, sub := range c.commands {
 		if err = sub.Init(c, nil); err != nil {
 			return fmt.Errorf("%s %s init: %w", c.Name, sub.Name(), err)
@@ -252,11 +256,11 @@ type NewCommandOpts struct {
 // NewCommand creates new command
 func NewCommand(opts NewCommandOpts) *Command {
 	return &Command{
-		Name:    opts.Name,
-		Args:    opts.Args,
-		Output:  opts.Output,
-		WorkDir: opts.WorkDir,
-		Fmt:     core.NewPrinterFormatter(opts.NoColor, opts.Output),
-		App:     opts.App,
+		Name:           opts.Name,
+		Args:           opts.Args,
+		Output:         opts.Output,
+		DefaultWorkDir: opts.WorkDir,
+		Fmt:            core.NewPrinterFormatter(opts.NoColor, opts.Output),
+		App:            opts.App,
 	}
 }

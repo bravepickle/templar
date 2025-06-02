@@ -45,7 +45,7 @@ type PrinterFormatter struct {
 
 // Printf prints out to Stdout formatted and colorized string
 func (f *PrinterFormatter) Printf(msg string, args ...any) {
-	for k, v := range textStyles {
+	for k, v := range f.Styles {
 		msg = strings.ReplaceAll(msg, k, v)
 	}
 
@@ -55,7 +55,7 @@ func (f *PrinterFormatter) Printf(msg string, args ...any) {
 }
 
 func (f *PrinterFormatter) Sprintf(msg string, args ...any) string {
-	for k, v := range textStyles {
+	for k, v := range f.Styles {
 		msg = strings.ReplaceAll(msg, k, v)
 	}
 
@@ -66,7 +66,7 @@ func (f *PrinterFormatter) Sprintf(msg string, args ...any) string {
 func (f *PrinterFormatter) Print(args ...any) {
 	if len(args) > 0 { // styles only first argument
 		if msg, ok := args[0].(string); ok {
-			for k, v := range textStyles {
+			for k, v := range f.Styles {
 				msg = strings.ReplaceAll(msg, k, v)
 			}
 
@@ -83,7 +83,7 @@ func (f *PrinterFormatter) Print(args ...any) {
 func (f *PrinterFormatter) Println(msg string, args ...any) {
 	//f.Print("aaa", args...)
 
-	for k, v := range textStyles {
+	for k, v := range f.Styles {
 		msg = strings.ReplaceAll(msg, k, v)
 	}
 
@@ -94,6 +94,7 @@ func (f *PrinterFormatter) Println(msg string, args ...any) {
 
 func (f *PrinterFormatter) Init() {
 	if f.NoColor { // fill in with blanks
+		f.Styles = map[string]string{}
 		for k := range textStyles {
 			f.Styles[k] = ``
 		}

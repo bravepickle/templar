@@ -107,7 +107,7 @@ func TestRunCommand_version(t *testing.T) {
 			expectedError:   "",
 			expectedVersion: "dev",
 			expectedCommit:  "<unknown>",
-			expectedWorkdir: "-",
+			expectedWorkdir: "",
 		},
 	}
 
@@ -129,7 +129,7 @@ func TestRunCommand_version(t *testing.T) {
 				must.Contains(output, "GIT commit: "+d.expectedCommit, "commit mismatch")
 
 				if d.workdir != "-" { // skip check workdir for some scenarios to simplify tests
-					must.Contains(output, "Working directory: "+d.workdir, "workdir mismatch")
+					must.Contains(output, "Working directory: "+d.expectedWorkdir, "workdir mismatch")
 				}
 			}
 		})
