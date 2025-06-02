@@ -28,29 +28,25 @@ See also (default functions and usages)[https://golang.org/pkg/text/template/#hd
 - [ ] On command help view full description. Make new functions for detailed and short description
 - [ ] Add debug command to see all resulting variables available for the template
 - [ ] If debug is disabled then do not show error messages. Instead, show help blocks with non-zero exit code
+- [ ] Add SchemaJSON file for `batch.json` files.
 
 ## Usage
 ```
-Usage: templar [OPTIONS] [COMMAND] [COMMAND_OPTIONS]
-  -h	Print command usage options [Optional].
-  -help
-    	Print command usage options [Optional].
-  -v	Run in verbose mode [Optional].
-  -verbose
-    	Run in verbose mode [Optional].
+Usage: templar [OPTIONS] COMMAND [COMMAND_ARGS]
 
 Commands:
-    list    List all available commands.
-    init    Initialize project for templated within current dir.
-    build   Build file from template.
+  help       show help information on command or subcommand usage. Type "templar help help" to see help command usage information
+  version    show application information on its build version and directories
+  init       init default files structure for building templates
+  build      render template contents with provided variables
 
-Examples:
-    templar -h      See help for using this command
-    templar init    Initialize current working directory as new project
-    templar --verbose
-	init Initialize new project in verbose mode
-    templar build --format=env -d /tmp --format=env --input=./data.env --batch ./batch.json Build templates batch from file
-    templar build --format=env --input=./data.env --template=./templates/test.tpl --output=./out.txt
-	 Create out.txt file from test.tpl and environment parameters found in data.env file
-
+Options:
+  -debug
+        debug mode
+  -nocolor
+        disable color and styles output
+  -verbose
+        verbose output
+  -workdir string
+        working directory path (default "/home/user/templar")
 ```

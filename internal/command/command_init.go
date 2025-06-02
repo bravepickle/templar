@@ -7,9 +7,8 @@ import (
 )
 
 type InitCommand struct {
-	cmd  *Command
-	fs   *flag.FlagSet
-	Help bool
+	cmd *Command
+	fs  *flag.FlagSet
 }
 
 func (c *InitCommand) Name() string {
@@ -55,7 +54,6 @@ func (c *InitCommand) Init(cmd *Command, args []string) error {
 
 	c.cmd = cmd
 	c.fs = flag.NewFlagSet(c.Name(), flag.ContinueOnError)
-	c.fs.BoolVar(&c.Help, `h`, false, `print command usage suboptions`)
 	c.fs.SetOutput(c.cmd.Output)
 	c.fs.Usage = c.usage
 
@@ -67,10 +65,6 @@ func (c *InitCommand) IsNil() bool {
 }
 
 func (c *InitCommand) Run() error {
-	if c.Help {
-		return c.Usage()
-	}
-
 	//c.cmd.Fmt.Printf("%s %+v\n", c.cmd.Name, c)
 
 	// TODO: create mkdir -p if not exists. Check custom workdir c.cmd.WorkDir
@@ -108,15 +102,19 @@ func (c *InitCommand) Run() error {
 		}
 	}
 
-	if err = os.WriteFile(c.cmd.WorkDir+`/variables.env`, []byte(ExampleEnv), 0644); err != nil {
+	if err = os.WriteFile(c.cmd.WorkDir+`/variables.env`, []byte(ExampleEnv), MkFilePerm); err != nil {
 		return err
 	}
 
-	if err = os.WriteFile(c.cmd.WorkDir+`/variables.json`, []byte(ExampleJson), 0644); err != nil {
+	if err = os.WriteFile(c.cmd.WorkDir+`/variables.json`, []byte(ExampleJson), MkFilePerm); err != nil {
 		return err
 	}
 
-	if err = os.WriteFile(c.cmd.WorkDir+`/templates/example.tmpl`, []byte(ExampleTemplate), 0644); err != nil {
+	if err = os.WriteFile(c.cmd.WorkDir+`/batch.json`, []byte(ExampleBatchJson), MkFilePerm); err != nil {
+		return err
+	}
+
+	if err = os.WriteFile(c.cmd.WorkDir+`/templates/example.tpl`, []byte(ExampleTemplate), MkFilePerm); err != nil {
 		return err
 	}
 
