@@ -14,3 +14,8 @@ func (a *Application) Init() {
 		a.GitCommitHash = "<unknown>"
 	}
 }
+
+type Nillable interface {
+	// IsNil check if interface has nil value
+	IsNil() bool
+}
