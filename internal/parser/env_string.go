@@ -13,8 +13,12 @@ type EnvParser struct {
 	//WithOsEnv bool
 }
 
+func (p *EnvParser) IsNil() bool {
+	return p == nil
+}
+
 // Parse parses key-values from string and puts it to struct
-func (p EnvParser) Parse(in string) (Params, error) {
+func (p *EnvParser) Parse(in string) (Params, error) {
 	out, err := godotenv.Unmarshal(in)
 
 	if err != nil {
@@ -30,12 +34,6 @@ func (p EnvParser) Parse(in string) (Params, error) {
 }
 
 // NewEnvParser creates parser and parses raw data string
-func NewEnvParser() EnvParser {
-	return EnvParser{}
+func NewEnvParser() *EnvParser {
+	return &EnvParser{}
 }
-
-//
-//// NewEnvParser creates parser and parses raw data string
-//func NewEnvParser(withOsEnv bool) EnvParser {
-//	return EnvParser{withOsEnv}
-//}

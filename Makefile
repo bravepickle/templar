@@ -127,7 +127,7 @@ clean:
 test: lint
 	@echo "$(CL_YELLOW)Running tests...$(CL_RESET)"
 
-	$(GOCMD) test ./...
+	$(GOCMD) test ./... $(TEST_ARGS)
 
 # run benchmarks
 .PHONY: bench

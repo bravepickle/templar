@@ -11,8 +11,12 @@ import (
 // EnvOsParser parses OS environment params
 type EnvOsParser struct{}
 
+func (p *EnvOsParser) IsNil() bool {
+	return p == nil
+}
+
 // Parse parses key-values from string and puts it to struct
-func (p EnvOsParser) Parse(_ string) (Params, error) {
+func (p *EnvOsParser) Parse(_ string) (Params, error) {
 	lines := os.Environ()
 	result := Params{}
 
@@ -29,6 +33,6 @@ func (p EnvOsParser) Parse(_ string) (Params, error) {
 	return result, nil
 }
 
-func NewEnvOsParser() EnvOsParser {
-	return EnvOsParser{}
+func NewEnvOsParser() *EnvOsParser {
+	return &EnvOsParser{}
 }

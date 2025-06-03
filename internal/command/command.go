@@ -24,14 +24,9 @@ const (
 var ErrNoCommand = errors.New("command not defined")
 var ErrNoInit = errors.New("command not initialized")
 
-type Nillable interface {
-	// IsNil check if interface has nil value
-	IsNil() bool
-}
-
 // Subcommand is a subcommand common interface
 type Subcommand interface {
-	Nillable
+	core.Nillable
 
 	// Init boots command
 	//

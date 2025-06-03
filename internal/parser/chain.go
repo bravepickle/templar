@@ -5,13 +5,18 @@ import (
 	"fmt"
 )
 
-// ChainParser parsing environment params from parsers chain
+// ChainParser parsing environment params from parsers chain.
+// Last parser will override all previously defined values with the same name.
 type ChainParser struct {
 	parsers []Parser
 }
 
+func (p *ChainParser) IsNil() bool {
+	return p == nil
+}
+
 // Parse parses key-values from string and puts it to struct
-func (p ChainParser) Parse(in string) (Params, error) {
+func (p *ChainParser) Parse(in string) (Params, error) {
 	if len(p.parsers) == 0 {
 		return nil, errors.New("no parsers found")
 	}
@@ -34,6 +39,6 @@ func (p ChainParser) Parse(in string) (Params, error) {
 	return par, nil
 }
 
-func NewChainParser(parser ...Parser) ChainParser {
-	return ChainParser{parsers: parser}
+func NewChainParser(parser ...Parser) *ChainParser {
+	return &ChainParser{parsers: parser}
 }

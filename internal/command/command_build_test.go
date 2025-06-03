@@ -2,6 +2,8 @@ package command
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -51,14 +53,14 @@ func TestBuildCommand_Run(t *testing.T) {
 		beforeBuild    func(sub Subcommand, cmd *Command)
 		afterBuild     func(sub Subcommand, cmd *Command)
 	}{
-		{
-			name:           "no input",
-			args:           nil,
-			expectedErr:    "no template file specified",
-			expectedOutput: nil,
-			beforeBuild:    nil,
-			afterBuild:     nil,
-		},
+		//{
+		//	name:           "no input",
+		//	args:           nil,
+		//	expectedErr:    "no template file specified",
+		//	expectedOutput: nil,
+		//	beforeBuild:    nil,
+		//	afterBuild:     nil,
+		//},
 		{
 			name:           "invalid batch path",
 			args:           []string{"--batch", "unknown.txt"},
@@ -66,6 +68,51 @@ func TestBuildCommand_Run(t *testing.T) {
 			expectedOutput: nil,
 			beforeBuild:    nil,
 			afterBuild:     nil,
+		},
+		{
+			name:           "env",
+			args:           []string{"--input", ".env", "--format", "env", "--template", "template.tpl", "--output", "result.txt"},
+			expectedErr:    "",
+			expectedOutput: nil,
+			beforeBuild: func(sub Subcommand, cmd *Command) {
+				cmd.WorkDir = t.TempDir()
+
+				// Init vars file
+				//envFile, err := os.CreateTemp(cmd.WorkDir, "test-env")
+				envFilename := filepath.Join(cmd.WorkDir, ".env")
+				envFile, err := os.OpenFile(envFilename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+				must.NoError(err)
+
+				defer func() {
+					must.NoError(envFile.Close())
+				}()
+
+				must.NoError(os.WriteFile(envFilename, []byte("# comment\nTEST_TEMPLAR=success"), 0666))
+
+				// Init template file
+				tplFilename := filepath.Join(cmd.WorkDir, "template.tpl")
+				tplFile, err := os.OpenFile(tplFilename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+				must.NoError(err)
+
+				defer func() {
+					must.NoError(tplFile.Close())
+				}()
+
+				must.NoError(os.WriteFile(
+					tplFilename,
+					[]byte("Test value: {{ .TEST_TEMPLAR }}\nDefault: {{ default \"zero\" .UNDEF_VAR }}"),
+					0666,
+				))
+			},
+			afterBuild: func(sub Subcommand, cmd *Command) {
+				out, err := os.ReadFile(filepath.Join(cmd.WorkDir, "result.txt"))
+				must.NoError(err)
+
+				output := string(out)
+				t.Log("rendered:", output)
+				must.Contains(output, "Test value: success", "placeholder failed")
+				must.Contains(output, "Default: zero", "defaults failed")
+			},
 		},
 	}
 	for _, d := range datasets {

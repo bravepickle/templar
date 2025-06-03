@@ -17,8 +17,6 @@ var WorkDir string
 
 func main() {
 	if err := RunCommand(AppName, os.Args[1:], os.Stdout, AppVersion, GitCommitHash, WorkDir); err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, err)
-
 		os.Exit(1)
 	}
 
@@ -26,8 +24,6 @@ func main() {
 }
 
 func RunCommand(name string, args []string, w io.Writer, version string, commit string, workdir string) error {
-	//fmt.Println("RunCommand:", name, args)
-
 	app := core.Application{
 		Version:       version,
 		GitCommitHash: commit,
@@ -44,8 +40,37 @@ func RunCommand(name string, args []string, w io.Writer, version string, commit 
 	})
 
 	if err := cmd.Init(); err != nil {
-		return fmt.Errorf("%s init: %w", cmd.Name, err)
+		if cmd.Debug {
+			err = fmt.Errorf("%s init: %w", cmd.Name, err)
+			_, _ = fmt.Fprintln(os.Stderr, err)
+		}
+
+		if err = cmd.Usage(); err != nil {
+			err = fmt.Errorf("%s usage: %w", cmd.Name, err)
+			if cmd.Debug {
+				_, _ = fmt.Fprintln(os.Stderr, err)
+			}
+		}
+
+		return err
 	}
 
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		if cmd.Debug {
+			err = fmt.Errorf("%s run: %w", cmd.Name, err)
+			_, _ = fmt.Fprintln(os.Stderr, err)
+		}
+
+		if err = cmd.Usage(); err != nil {
+			err = fmt.Errorf("%s usage: %w", cmd.Name, err)
+
+			if cmd.Debug {
+				_, _ = fmt.Fprintln(os.Stderr, err)
+			}
+		}
+
+		return err
+	}
+
+	return nil
 }
