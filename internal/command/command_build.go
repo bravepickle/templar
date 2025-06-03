@@ -1,8 +1,12 @@
 package command
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
+	"os"
+
+	"github.com/bravepickle/templar/internal/core"
 )
 
 type BuildCommand struct {
@@ -27,7 +31,7 @@ func (c *BuildCommand) usage() {
 
 	subName := c.Name()
 	c.cmd.Fmt.Printf("<debug>%-15s<reset> %s\n\n", subName, c.Summary())
-	c.cmd.Fmt.Printf("Usage: <debug>%s %s [OPTIONS]<reset>\n", c.cmd.Name, subName)
+	c.cmd.Fmt.Printf("Usage: <debug>%s [OPTIONS] %s [COMMAND_OPTIONS]<reset>\n", c.cmd.Name, subName)
 	c.cmd.Fmt.Println(``)
 
 	c.cmd.Fmt.Println("<info>Options:<reset>")
@@ -67,6 +71,7 @@ func (c *BuildCommand) Init(cmd *Command, args []string) error {
 	c.fs.StringVar(&c.InputFormat, "format", "env", "input file format. Allowed: env, json")
 	c.fs.StringVar(&c.OutputFile, "out", "", "output file path, If empty, outputs to stdout. If \"-batch\" option is used, specifies output directory")
 	c.fs.StringVar(&c.TemplateFile, "template", "", "template file path, If empty and \"-batch\" not defined, reads from stdin")
+	c.fs.StringVar(&c.BatchFile, "batch", "", "batch file path. Overrides some other fields, such as --variables")
 	c.fs.BoolVar(&c.SkipExisting, "skip", false, "skip generation if target files already exist")
 
 	return c.fs.Parse(args)
@@ -77,7 +82,35 @@ func (c *BuildCommand) IsNil() bool {
 }
 
 func (c *BuildCommand) Run() error {
+	if c.fs == nil {
+		return ErrNoInit
+	}
+
+	if c.BatchFile != "" {
+		return c.runBatch()
+	}
+
+	if c.TemplateFile == "" {
+		return errors.New("no template file specified")
+	}
+
 	c.cmd.Fmt.Printf("<alert><bold>TBD. Needs implementation<reset>\n")
 
 	return errors.New("implement \"build\" command")
+}
+
+func (c *BuildCommand) runBatch() error {
+	contents, err := os.ReadFile(c.BatchFile)
+	if err != nil {
+		return err
+	}
+
+	var batch *core.Batch
+	if err := json.Unmarshal(contents, batch); err != nil {
+		return err
+	}
+
+	c.cmd.Fmt.Printf("<alert><bold>TBD: contents - %+v<reset>\n", batch)
+
+	return nil
 }

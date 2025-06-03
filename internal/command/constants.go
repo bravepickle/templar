@@ -33,8 +33,8 @@ const ExampleBatchJson = `{
   "items": [
     {
       "info": "This template will combine defaults with other values.",
-      "template": "rendered.txt",
-      "source": "./templates/custom.tpl",
+      "target": "rendered.txt",
+      "template": "./templates/custom.tpl",
       "variables": {
         "FOO": "custom",
         "extra": "extra value"
@@ -42,12 +42,12 @@ const ExampleBatchJson = `{
     },
     {
 	  "info": "Will use all defaults to render the template.",
-      "template": "with_defaults.txt"
+      "target": "with_defaults.txt"
     }
   ],
   "defaults": {
     "info": "This section defines default values to be used in the \"items\" section.",
-    "source": "./templates/template.txt.tpl",
+    "template": "./templates/template.txt.tpl",
     "variables": {
       "FOO": "bar",
       "NUMBER": 42,
@@ -67,6 +67,7 @@ This is an example of template for templar to use
 Debug is enabled
 {{ end }}
 My lucky number is {{ .NUMBER }}.
+Directly read your ENV variables with disregard to options and overrides: your username is: {{ env "USER" }}.
 See {{ .SprigURL }} and {{ .GoURL }} for more information on usage.
 
 JSON has nested parameter {{ default "N/A" .nested }}.

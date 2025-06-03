@@ -11,6 +11,10 @@ See also GOLANG (template engine docs)[https://golang.org/pkg/html/template/]
 
 See also (default functions and usages)[https://golang.org/pkg/text/template/#hdr-Functions]
 
+## Variables overrides order
+### Batch
+OS ENV -> item variables from batch file -> defaults in batch file
+
 ## TODO
 - [ ] Add binary executables for some of the architectures
 - [ ] Read docs with installation and usage instructions
