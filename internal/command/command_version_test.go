@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/bravepickle/templar/internal/core"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,34 +21,14 @@ func TestVersionCommand_Basic(t *testing.T) {
 	must.Error(ErrNoInit, cmd.Usage())
 }
 
-func initSubcommand(must *require.Assertions, targetCmd string, buf *bytes.Buffer) Subcommand {
-	cmd := NewCommand(NewCommandOpts{
-		Name:    "test-app",
-		Args:    []string{targetCmd},
-		Output:  buf,
-		NoColor: true,
-		App:     core.Application{},
-	})
-
-	must.NotNil(cmd)
-	must.NoError(cmd.Init(), "init failed")
-
-	for _, c := range cmd.commands {
-		if c.Name() == targetCmd {
-			return c
-		}
-	}
-
-	return nil
-}
-
 func TestVersionCommand_Usage(t *testing.T) {
 	must := require.New(t)
 	targetCmd := SubCommandVersion
 	buf := bytes.NewBuffer([]byte{})
 
-	sub := initSubcommand(must, targetCmd, buf)
+	sub, cmd := initTestSubcommand(must, targetCmd, buf)
 
+	must.NoError(sub.Init(cmd, []string{}))
 	must.NotNil(sub, "subcommand not found")
 	must.NoError(sub.Usage(), "usage failed")
 
@@ -64,9 +43,12 @@ func TestVersionCommand_Run(t *testing.T) {
 	targetCmd := SubCommandVersion
 	buf := bytes.NewBuffer([]byte{})
 
-	sub := initSubcommand(must, targetCmd, buf)
-
+	sub, cmd := initTestSubcommand(must, targetCmd, buf)
 	must.NotNil(sub, "subcommand not found")
+	must.NotNil(cmd, "command not found")
+
+	must.Error(ErrNoCommand, sub.Init(nil, []string{}))
+	must.NoError(sub.Init(cmd, []string{}))
 	must.NoError(sub.Run(), "run failed")
 
 	output := buf.String()

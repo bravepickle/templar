@@ -119,7 +119,7 @@ func (c *Command) Init() error {
 
 	c.fs = flag.NewFlagSet(c.Name, flag.ContinueOnError)
 	c.fs.SetOutput(c.Output)
-	c.fs.BoolVar(&c.NoColor, "nocolor", false, "disable color and styles output")
+	c.fs.BoolVar(&c.NoColor, "no-color", false, "disable color and styles output")
 	c.fs.BoolVar(&c.Debug, "debug", false, "debug mode")
 	c.fs.BoolVar(&c.Verbose, "verbose", false, "verbose output")
 	c.fs.StringVar(&c.WorkDir, "workdir", c.DefaultWorkDir, "working directory path")
@@ -193,6 +193,10 @@ loop:
 		// update formatter coloring scheme
 		c.Fmt.NoColor = c.NoColor
 		c.Fmt.Init()
+
+		if err = c.Init(); err != nil {
+			return fmt.Errorf("%s usage: %w", c.Name, err)
+		}
 
 		if err = c.Usage(); err != nil {
 			return fmt.Errorf("%s usage: %w", c.Name, err)

@@ -43,7 +43,7 @@ Commands:
 Options:
   -debug
         debug mode
-  -nocolor
+  -no-color
         disable color and styles output
   -verbose
         verbose output

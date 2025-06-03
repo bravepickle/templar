@@ -9,6 +9,9 @@ import (
 type InitCommand struct {
 	cmd *Command
 	fs  *flag.FlagSet
+
+	// NoBatch disables generation of batch file examples
+	NoBatch bool
 }
 
 func (c *InitCommand) Name() string {
@@ -55,6 +58,7 @@ func (c *InitCommand) Init(cmd *Command, args []string) error {
 	c.cmd = cmd
 	c.fs = flag.NewFlagSet(c.Name(), flag.ContinueOnError)
 	c.fs.SetOutput(c.cmd.Output)
+	c.fs.BoolVar(&c.NoBatch, "no-batch", false, "skip batch examples generation")
 	c.fs.Usage = c.usage
 
 	return c.fs.Parse(args)
@@ -65,10 +69,6 @@ func (c *InitCommand) IsNil() bool {
 }
 
 func (c *InitCommand) Run() error {
-	//c.cmd.Fmt.Printf("%s %+v\n", c.cmd.Name, c)
-
-	// TODO: create mkdir -p if not exists. Check custom workdir c.cmd.WorkDir
-
 	var err error
 	if c.cmd.WorkDir == "" {
 		if c.cmd.WorkDir, err = os.Getwd(); err != nil {
@@ -110,12 +110,18 @@ func (c *InitCommand) Run() error {
 		return err
 	}
 
-	if err = os.WriteFile(c.cmd.WorkDir+`/batch.json`, []byte(ExampleBatchJson), MkFilePerm); err != nil {
+	if err = os.WriteFile(c.cmd.WorkDir+`/templates/example.tpl`, []byte(ExampleTemplate), MkFilePerm); err != nil {
 		return err
 	}
 
-	if err = os.WriteFile(c.cmd.WorkDir+`/templates/example.tpl`, []byte(ExampleTemplate), MkFilePerm); err != nil {
-		return err
+	if !c.NoBatch {
+		if err = os.WriteFile(c.cmd.WorkDir+`/batch.json`, []byte(ExampleBatchJson), MkFilePerm); err != nil {
+			return err
+		}
+
+		if err = os.WriteFile(c.cmd.WorkDir+`/templates/custom.tpl`, []byte(ExampleCustomTemplate), MkFilePerm); err != nil {
+			return err
+		}
 	}
 
 	if !c.cmd.Quiet {

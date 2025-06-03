@@ -20,14 +20,14 @@ func TestRunCommand(t *testing.T) {
 		{
 			name:          "without subcommand",
 			command:       "test-app",
-			args:          []string{"--nocolor"},
+			args:          []string{"--no-color"},
 			expectedError: "",
 			expected:      []string{"test-app"},
 		},
 		{
 			name:          "show help version",
 			command:       "test-app",
-			args:          []string{"--nocolor", "help", "version"},
+			args:          []string{"--no-color", "help", "version"},
 			expectedError: "",
 			expected: []string{
 				"show application information on its build version and directories",
@@ -76,7 +76,7 @@ func TestRunCommand_version(t *testing.T) {
 		{
 			name:            "show version",
 			command:         "test-app",
-			args:            []string{"--nocolor", "version"},
+			args:            []string{"--no-color", "version"},
 			version:         "v1.0.0",
 			commit:          "777",
 			workdir:         "/tmp",
@@ -100,7 +100,7 @@ func TestRunCommand_version(t *testing.T) {
 		{
 			name:            "version defaults",
 			command:         "test-app",
-			args:            []string{"--nocolor", "version"},
+			args:            []string{"--no-color", "version"},
 			version:         "",
 			commit:          "",
 			workdir:         "",
