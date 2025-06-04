@@ -65,7 +65,7 @@ func TestBuildCommand_Run(t *testing.T) {
 		//},
 		{
 			name:           "invalid batch path",
-			args:           []string{"--batch", "unknown.txt"},
+			args:           []string{"--input", "unknown.txt", "--format", "batch"},
 			expectedErr:    "unknown.txt: no such file or directory",
 			expectedOutput: nil,
 			beforeBuild:    nil,
@@ -73,7 +73,7 @@ func TestBuildCommand_Run(t *testing.T) {
 		},
 		{
 			name:           "env",
-			args:           []string{"--vars", ".env", "--format", "env", "--template", "template.tpl", "--output", "result.txt"},
+			args:           []string{"--input", ".env", "--format", "env", "--template", "template.tpl", "--output", "result.txt"},
 			expectedErr:    "",
 			expectedOutput: nil,
 			beforeBuild: func(sub Subcommand, cmd *Command) {
@@ -117,7 +117,7 @@ func TestBuildCommand_Run(t *testing.T) {
 		},
 		{
 			name:           "stdout with clear env",
-			args:           []string{"--vars", ".env", "--template", "template.tpl"},
+			args:           []string{"--input", ".env", "--template", "template.tpl"},
 			expectedErr:    "",
 			expectedOutput: []string{"Test value: foo"},
 			beforeBuild: func(sub Subcommand, cmd *Command) {
@@ -155,7 +155,7 @@ func TestBuildCommand_Run(t *testing.T) {
 		},
 		{
 			name:           "json",
-			args:           []string{"--vars", "vars.json", "--format", "json", "--template", "file.tpl", "--output", "result.txt"},
+			args:           []string{"--input", "vars.json", "--format", "json", "--template", "file.tpl", "--output", "result.txt"},
 			expectedErr:    "",
 			expectedOutput: nil,
 			beforeBuild: func(sub Subcommand, cmd *Command) {
@@ -169,7 +169,7 @@ func TestBuildCommand_Run(t *testing.T) {
 				cmd.WorkDir = t.TempDir()
 
 				// Init vars file
-				varsFilepath := filepath.Join(cmd.WorkDir, buildCmd.VarsFile)
+				varsFilepath := filepath.Join(cmd.WorkDir, buildCmd.InputFile)
 				varsFile, err := os.OpenFile(varsFilepath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 				must.NoError(err)
 

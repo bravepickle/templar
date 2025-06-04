@@ -6,6 +6,12 @@ const MkDirPerm = 0755
 // MkFilePerm defines default permissions for created files
 const MkFilePerm = 0644
 
+const FormatEnv = "env"
+const FormatJson = "json"
+const FormatBatch = "batch"
+
+var AllowedFormats = []string{FormatEnv, FormatJson, FormatBatch}
+
 const ExampleEnv = `
 # This is an example environment variable configuration file.
 # Change it to fit your needs. Comments and quotes are supported.

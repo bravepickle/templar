@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/bravepickle/templar/internal/core"
 	"github.com/bravepickle/templar/internal/parser"
@@ -18,11 +19,10 @@ type BuildCommand struct {
 	// In is the default stream to read input from for templates
 	In io.Reader
 
-	VarsFile      string
+	InputFile     string
 	OutputFile    string
 	InputFormat   string
 	TemplateFile  string
-	BatchFile     string
 	SkipExisting  bool
 	ClearEnv      bool
 	NoCloseWriter bool
@@ -75,11 +75,11 @@ func (c *BuildCommand) Init(cmd *Command, args []string) error {
 	c.fs.SetOutput(c.cmd.Output)
 	c.fs.Usage = c.usage
 
-	c.fs.StringVar(&c.VarsFile, "vars", "", "file path which contains variables for template to use. Format should match \"-format\" value")
-	c.fs.StringVar(&c.InputFormat, "format", "env", "input file format for variables' file. Allowed: env, json")
+	c.fs.StringVar(&c.InputFile, "input", "", "file path which contains variables for template to use or batch file. Format should match \"-format\" value")
+	c.fs.StringVar(&c.InputFormat, "format", "env", "input file format for variables' file. Allowed: "+strings.Join(AllowedFormats, ", "))
 	c.fs.StringVar(&c.OutputFile, "output", "", "output file path, If empty, outputs to stdout. If \"-batch\" option is used, specifies output directory")
 	c.fs.StringVar(&c.TemplateFile, "template", "", "template file path, If empty and \"-batch\" not defined, reads from stdin")
-	c.fs.StringVar(&c.BatchFile, "batch", "", "batch file path. Overrides some other fields, such as -vars")
+	//c.fs.StringVar(&c.BatchFile, "batch", "", "batch file path. Overrides some other fields, such as -input")
 	c.fs.BoolVar(&c.SkipExisting, "skip", false, "skip generation if target files already exist")
 	c.fs.BoolVar(&c.ClearEnv, "clear", false, "clear ENV variables before building variables to avoid collisions")
 
@@ -95,7 +95,7 @@ func (c *BuildCommand) Run() error {
 		return ErrNoInit
 	}
 
-	if c.BatchFile != "" {
+	if c.InputFormat == FormatBatch {
 		return c.runBatch()
 	}
 
@@ -134,11 +134,11 @@ func (c *BuildCommand) readVars() (parser.Params, error) {
 	var contents []byte
 	var err error
 
-	if c.VarsFile != "" {
-		if filepath.IsAbs(c.VarsFile) {
-			contents, err = os.ReadFile(c.VarsFile)
+	if c.InputFile != "" {
+		if filepath.IsAbs(c.InputFile) {
+			contents, err = os.ReadFile(c.InputFile)
 		} else {
-			contents, err = os.ReadFile(filepath.Join(c.cmd.WorkDir, c.VarsFile))
+			contents, err = os.ReadFile(filepath.Join(c.cmd.WorkDir, c.InputFile))
 		}
 
 		if err != nil {
@@ -245,7 +245,7 @@ func (c *BuildCommand) runOnce() error {
 }
 
 func (c *BuildCommand) runBatch() error {
-	contents, err := os.ReadFile(c.BatchFile)
+	contents, err := os.ReadFile(c.InputFile)
 	if err != nil {
 		return err
 	}
