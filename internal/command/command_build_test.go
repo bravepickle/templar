@@ -2,6 +2,7 @@ package command
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -50,6 +51,7 @@ func TestBuildCommand_Run(t *testing.T) {
 		args           []string
 		expectedErr    string
 		expectedOutput []string
+		expectedStdout []string
 		beforeBuild    func(sub Subcommand, cmd *Command)
 		afterBuild     func(sub Subcommand, cmd *Command)
 	}{
@@ -78,7 +80,6 @@ func TestBuildCommand_Run(t *testing.T) {
 				cmd.WorkDir = t.TempDir()
 
 				// Init vars file
-				//envFile, err := os.CreateTemp(cmd.WorkDir, "test-env")
 				envFilename := filepath.Join(cmd.WorkDir, ".env")
 				envFile, err := os.OpenFile(envFilename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 				must.NoError(err)
@@ -114,6 +115,54 @@ func TestBuildCommand_Run(t *testing.T) {
 				must.Contains(output, "Default: zero", "defaults failed")
 			},
 		},
+		{
+			name:           "stdout with clear env",
+			args:           []string{"--input", ".env", "--template", "template.tpl"},
+			expectedErr:    "",
+			expectedOutput: nil,
+			beforeBuild: func(sub Subcommand, cmd *Command) {
+				cmd.WorkDir = t.TempDir()
+				if s, ok := sub.(*BuildCommand); ok {
+					s.NoCloseWriter = true
+				}
+
+				// Init vars file
+				envFilename := filepath.Join(cmd.WorkDir, ".env")
+				envFile, err := os.OpenFile(envFilename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+				must.NoError(err)
+
+				defer func() {
+					must.NoError(envFile.Close())
+				}()
+
+				must.NoError(os.WriteFile(envFilename, []byte("TEST_TEMPLAR=foo"), 0666))
+
+				// Init template file
+				tplFilename := filepath.Join(cmd.WorkDir, "template.tpl")
+				tplFile, err := os.OpenFile(tplFilename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+				must.NoError(err)
+
+				defer func() {
+					must.NoError(tplFile.Close())
+				}()
+
+				must.NoError(os.WriteFile(
+					tplFilename,
+					[]byte("Test value: {{ .TEST_TEMPLAR }}"),
+					0666,
+				))
+			},
+			//afterBuild: func(sub Subcommand, cmd *Command) {
+			//	out, err := os.ReadFile(filepath.Join(cmd.WorkDir, "result.txt"))
+			//	must.NoError(err)
+			//
+			//	output := string(out)
+			//	t.Log("rendered:", output)
+			//	must.Contains(output, "Test value: success", "placeholder failed")
+			//	must.Contains(output, "Default: zero", "defaults failed")
+			//},
+			expectedStdout: []string{"Test value: foo"},
+		},
 	}
 	for _, d := range datasets {
 		t.Run(d.name, func(t *testing.T) {
@@ -134,7 +183,12 @@ func TestBuildCommand_Run(t *testing.T) {
 				d.beforeBuild(sub, cmd)
 			}
 
-			err := sub.Run()
+			var err error
+
+			actualStdout := captureOutput(t, func() {
+				err = sub.Run()
+			})
+
 			if d.expectedErr != "" {
 				must.ErrorContains(err, d.expectedErr, "unexpected error")
 			} else {
@@ -143,10 +197,16 @@ func TestBuildCommand_Run(t *testing.T) {
 
 			output := buf.String()
 			t.Log("output:", output)
-
 			if len(d.expectedOutput) > 0 {
 				for _, line := range d.expectedOutput {
 					must.Contains(output, line, "missing output")
+				}
+			}
+
+			t.Log("stdout:", actualStdout)
+			if len(d.expectedStdout) > 0 {
+				for _, line := range d.expectedOutput {
+					must.Contains(actualStdout, line, "missing stdout output")
 				}
 			}
 
@@ -155,4 +215,33 @@ func TestBuildCommand_Run(t *testing.T) {
 			}
 		})
 	}
+}
+
+func captureOutput(t *testing.T, fn func()) string {
+	t.Helper()
+
+	// Backup original os.Stdout
+	origStdout := os.Stdout
+
+	// Create pipe to capture output
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+
+	os.Stdout = w
+
+	// Run the function while stdout is redirected
+	fn()
+
+	// Close writer and restore original stdout
+	err = w.Close()
+	require.NoError(t, err)
+	os.Stdout = origStdout
+
+	// Read captured output
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, r)
+	require.NoError(t, err)
+	_ = r.Close()
+
+	return buf.String()
 }

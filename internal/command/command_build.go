@@ -13,15 +13,16 @@ import (
 )
 
 type BuildCommand struct {
-	cmd          *Command
-	fs           *flag.FlagSet
-	InputFile    string
-	OutputFile   string
-	InputFormat  string
-	TemplateFile string
-	BatchFile    string
-	SkipExisting bool
-	ClearEnv     bool
+	cmd           *Command
+	fs            *flag.FlagSet
+	InputFile     string
+	OutputFile    string
+	InputFormat   string
+	TemplateFile  string
+	BatchFile     string
+	SkipExisting  bool
+	ClearEnv      bool
+	NoCloseWriter bool
 }
 
 func (c *BuildCommand) Name() string {
@@ -209,7 +210,7 @@ func (c *BuildCommand) getJSONParser(contents []byte) parser.Parser {
 
 func (c *BuildCommand) selectWriter() (io.Writer, error) {
 	if c.OutputFile == "" {
-		return os.Stdout, nil
+		return c.cmd.Output, nil
 	}
 
 	outputFile := c.OutputFile
@@ -263,8 +264,10 @@ func (c *BuildCommand) runOnce() error {
 		return fmt.Errorf("select writer: %w", err)
 	}
 
-	if oc, ok := writer.(io.Closer); ok {
-		defer oc.Close()
+	if !c.NoCloseWriter {
+		if oc, ok := writer.(io.Closer); ok {
+			defer oc.Close()
+		}
 	}
 
 	//fmt.Println("template contents:", tplContents)
