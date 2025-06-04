@@ -13,8 +13,11 @@ import (
 )
 
 type BuildCommand struct {
-	cmd           *Command
-	fs            *flag.FlagSet
+	cmd *Command
+	fs  *flag.FlagSet
+	// In is the default stream to read input from for templates
+	In io.Reader
+
 	InputFile     string
 	OutputFile    string
 	InputFormat   string
@@ -106,7 +109,11 @@ func (c *BuildCommand) readTemplate() (string, error) {
 	var err error
 
 	if c.TemplateFile == "" {
-		tplContents, err = io.ReadAll(os.Stdin) // read STDIN
+		if c.In == nil {
+			tplContents, err = io.ReadAll(os.Stdin) // default input stream
+		} else {
+			tplContents, err = io.ReadAll(c.In) // read from custom input io.Reader
+		}
 	} else {
 		tplFile := c.TemplateFile
 		if !filepath.IsAbs(c.TemplateFile) {
@@ -126,19 +133,6 @@ func (c *BuildCommand) readTemplate() (string, error) {
 func (c *BuildCommand) readVars() (parser.Params, error) {
 	var contents []byte
 	var err error
-
-	//var varParser parser.Parser
-
-	//if c.InputFile == "" {
-	//	contents, err = io.ReadAll(os.Stdin) // read STDIN
-	//} else {
-	//	tplFile := c.TemplateFile
-	//	if !filepath.IsAbs(c.TemplateFile) {
-	//		tplFile = filepath.Join(c.cmd.WorkDir, c.TemplateFile)
-	//	}
-	//
-	//	contents, err = os.ReadFile(tplFile)
-	//}
 
 	if c.InputFile != "" {
 		if filepath.IsAbs(c.InputFile) {

@@ -2,7 +2,6 @@ package command
 
 import (
 	"bytes"
-	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -31,6 +30,8 @@ func TestBuildCommand_Usage(t *testing.T) {
 
 	sub, cmd := initTestSubcommand(must, targetCmd, buf)
 
+	must.NotNil(sub)
+	must.NotNil(cmd)
 	must.NoError(sub.Init(cmd, []string{}))
 	must.NotNil(sub, "subcommand not found")
 	must.NoError(sub.Usage(), "usage failed")
@@ -51,7 +52,6 @@ func TestBuildCommand_Run(t *testing.T) {
 		args           []string
 		expectedErr    string
 		expectedOutput []string
-		expectedStdout []string
 		beforeBuild    func(sub Subcommand, cmd *Command)
 		afterBuild     func(sub Subcommand, cmd *Command)
 	}{
@@ -119,7 +119,7 @@ func TestBuildCommand_Run(t *testing.T) {
 			name:           "stdout with clear env",
 			args:           []string{"--input", ".env", "--template", "template.tpl"},
 			expectedErr:    "",
-			expectedOutput: nil,
+			expectedOutput: []string{"Test value: foo"},
 			beforeBuild: func(sub Subcommand, cmd *Command) {
 				cmd.WorkDir = t.TempDir()
 				if s, ok := sub.(*BuildCommand); ok {
@@ -161,7 +161,6 @@ func TestBuildCommand_Run(t *testing.T) {
 			//	must.Contains(output, "Test value: success", "placeholder failed")
 			//	must.Contains(output, "Default: zero", "defaults failed")
 			//},
-			expectedStdout: []string{"Test value: foo"},
 		},
 	}
 	for _, d := range datasets {
@@ -183,11 +182,7 @@ func TestBuildCommand_Run(t *testing.T) {
 				d.beforeBuild(sub, cmd)
 			}
 
-			var err error
-
-			actualStdout := captureOutput(t, func() {
-				err = sub.Run()
-			})
+			err := sub.Run()
 
 			if d.expectedErr != "" {
 				must.ErrorContains(err, d.expectedErr, "unexpected error")
@@ -203,45 +198,9 @@ func TestBuildCommand_Run(t *testing.T) {
 				}
 			}
 
-			t.Log("stdout:", actualStdout)
-			if len(d.expectedStdout) > 0 {
-				for _, line := range d.expectedOutput {
-					must.Contains(actualStdout, line, "missing stdout output")
-				}
-			}
-
 			if d.afterBuild != nil {
 				d.afterBuild(sub, cmd)
 			}
 		})
 	}
-}
-
-func captureOutput(t *testing.T, fn func()) string {
-	t.Helper()
-
-	// Backup original os.Stdout
-	origStdout := os.Stdout
-
-	// Create pipe to capture output
-	r, w, err := os.Pipe()
-	require.NoError(t, err)
-
-	os.Stdout = w
-
-	// Run the function while stdout is redirected
-	fn()
-
-	// Close writer and restore original stdout
-	err = w.Close()
-	require.NoError(t, err)
-	os.Stdout = origStdout
-
-	// Read captured output
-	var buf bytes.Buffer
-	_, err = io.Copy(&buf, r)
-	require.NoError(t, err)
-	_ = r.Close()
-
-	return buf.String()
 }
