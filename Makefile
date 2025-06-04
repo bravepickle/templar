@@ -17,15 +17,16 @@ endif
 # App settings
 OUT_DIR ?= $(shell pwd)
 APP_CONFIGS_DIR ?= $(OUT_DIR)
+APP_NAME ?= templar
 
 # Output for test coverage
 OUT_TESTS_COVER ?= ./tests_coverprofile.out
 
 # build flags
 GIT_COMMIT ?= $(shell git rev-list -1 HEAD | cut -c 1-7)
-LDFLAGS ?= -X github.com/bravepickle/templar.GitCommitHash=$(GIT_COMMIT) \
-	-X github.com/bravepickle/templar.AppVersion=$(APP_VERSION) \
-	-X github.com/bravepickle/templar.AppConfigsDir=$(APP_CONFIGS_DIR)
+LDFLAGS ?= -X github.com/bravepickle/templar/main.GitCommitHash=$(GIT_COMMIT) \
+	-X github.com/bravepickle/templar/main.AppName=$(APP_NAME) \
+	-X github.com/bravepickle/templar/main.AppVersion=$(APP_VERSION)
 
 # skip staticheck linting
 SKIP_STATICCHECK ?=
@@ -105,6 +106,10 @@ release: lint
 ifneq ($(APP_SKIP_VULNCHECK),1)
 	govulncheck ./...
 endif
+
+	go build -o $(OUT_DIR)/$(APP_NAME)$(APP_RELEASE_SUFFIX) -ldflags "$(LDFLAGS)"
+
+	@echo "Output file: $(CL_GREEN)$(OUT_DIR)/$(APP_NAME)$(APP_RELEASE_SUFFIX)$(CL_RESET)\n"
 
 # build & install binary from source code
 .PHONY: install
