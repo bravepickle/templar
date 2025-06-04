@@ -24,8 +24,8 @@ func (c *InitCommand) usage() {
 	}
 
 	subName := c.Name()
-	c.cmd.Fmt.Printf("<debug>%-15s<reset> %s\n\n", subName, c.Summary())
 	c.cmd.Fmt.Printf("Usage: <debug>%s [OPTIONS] %s [COMMAND_OPTIONS]<reset>\n\n", c.cmd.Name, subName)
+	c.cmd.Fmt.Printf("<debug>%-10s<reset> %s\n\n", subName, c.Summary())
 
 	c.cmd.Fmt.Println(`<info>Options:<reset>`)
 	c.fs.PrintDefaults()

@@ -9,8 +9,7 @@ import (
 	"github.com/bravepickle/templar/internal/core"
 )
 
-const AppName = "templar"
-
+var AppName string
 var AppVersion string
 var GitCommitHash string
 var WorkDir string
@@ -24,6 +23,10 @@ func main() {
 }
 
 func RunCommand(name string, args []string, w io.Writer, version string, commit string, workdir string) error {
+	if name == "" {
+		name = core.DefaultAppName
+	}
+
 	app := core.Application{
 		Version:       version,
 		GitCommitHash: commit,

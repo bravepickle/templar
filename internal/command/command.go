@@ -125,12 +125,17 @@ func (c *Command) Init() error {
 	return nil
 }
 
+func (c *Command) Summary() string {
+	return "generate template contents with provided variables"
+}
+
 func (c *Command) Usage() error {
 	if c.fs == nil {
 		return errors.New(`argument flags is not defined`)
 	}
 
 	c.Fmt.Printf("Usage: <debug>%s [OPTIONS] COMMAND [COMMAND_ARGS]<reset>\n\n", c.Name)
+	c.Fmt.Printf("<debug>%-10s<reset> %s\n\n", c.Name, c.Summary())
 
 	c.Fmt.Println(`<info>Commands:<reset>`)
 	for _, sub := range c.commands {

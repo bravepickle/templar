@@ -1,5 +1,7 @@
 package core
 
+const DefaultAppName = "templar"
+
 type Application struct {
 	Version       string
 	GitCommitHash string
