@@ -11,6 +11,7 @@ import (
 	"os"
 	"text/template"
 
+	"github.com/bravepickle/templar/internal/core"
 	parse "github.com/bravepickle/templar/internal/parser"
 )
 
@@ -166,7 +167,7 @@ func assertFileReadable(filename string) {
 	}
 }
 
-func renderParsedParams(params parse.Params) (string, error) {
+func renderParsedParams(params core.Params) (string, error) {
 	buf := new(bytes.Buffer)
 	buf.WriteString("===================== Parsed Values =====================\n")
 	//log.Println(`===================== Parsed Values =====================`)
@@ -296,7 +297,7 @@ func doBuild() (err error) {
 	templateFile = InputRunCommand.TemplateFile
 	inputFormat = InputRunCommand.InputFormat
 
-	var params parse.Params
+	var params core.Params
 	if inputFile != `` {
 		var parser parse.Parser
 		contents := readInputFileContents(inputFile)

@@ -3,6 +3,8 @@ package parser
 import (
 	"errors"
 	"fmt"
+
+	"github.com/bravepickle/templar/internal/core"
 )
 
 // ChainParser parsing environment params from parsers chain.
@@ -16,13 +18,13 @@ func (p *ChainParser) IsNil() bool {
 }
 
 // Parse parses key-values from string and puts it to struct
-func (p *ChainParser) Parse(in string) (Params, error) {
+func (p *ChainParser) Parse(in string) (core.Params, error) {
 	if len(p.parsers) == 0 {
 		return nil, errors.New("no parsers found")
 	}
 
-	par := Params{}
-	var subPar Params
+	par := core.Params{}
+	var subPar core.Params
 	var err error
 
 	for _, parser := range p.parsers {

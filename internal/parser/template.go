@@ -5,11 +5,12 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig"
+	"github.com/bravepickle/templar/internal/core"
 )
 
 type TemplateBuilder struct {
 	Name     string
-	Vars     Params
+	Vars     core.Params
 	Template string
 	funcMap  template.FuncMap
 }
@@ -23,7 +24,7 @@ func (t *TemplateBuilder) Build(w io.Writer) error {
 	return tpl.Execute(w, t.Vars)
 }
 
-func NewTemplate(name string, tpl string, vars Params) *TemplateBuilder {
+func NewTemplate(name string, tpl string, vars core.Params) *TemplateBuilder {
 	return &TemplateBuilder{
 		Name:     name,
 		Vars:     vars,

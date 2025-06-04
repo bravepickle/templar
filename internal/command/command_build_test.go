@@ -81,23 +81,11 @@ func TestBuildCommand_Run(t *testing.T) {
 
 				// Init vars file
 				envFilename := filepath.Join(cmd.WorkDir, ".env")
-				envFile, err := os.OpenFile(envFilename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
-				must.NoError(err)
-
-				defer func() {
-					must.NoError(envFile.Close())
-				}()
 
 				must.NoError(os.WriteFile(envFilename, []byte("# comment\nTEST_TEMPLAR=success"), 0666))
 
 				// Init template file
 				tplFilename := filepath.Join(cmd.WorkDir, "template.tpl")
-				tplFile, err := os.OpenFile(tplFilename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
-				must.NoError(err)
-
-				defer func() {
-					must.NoError(tplFile.Close())
-				}()
 
 				must.NoError(os.WriteFile(
 					tplFilename,
@@ -128,23 +116,11 @@ func TestBuildCommand_Run(t *testing.T) {
 
 				// Init vars file
 				envFilename := filepath.Join(cmd.WorkDir, ".env")
-				envFile, err := os.OpenFile(envFilename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
-				must.NoError(err)
-
-				defer func() {
-					must.NoError(envFile.Close())
-				}()
 
 				must.NoError(os.WriteFile(envFilename, []byte("TEST_TEMPLAR=foo"), 0666))
 
 				// Init template file
 				tplFilename := filepath.Join(cmd.WorkDir, "template.tpl")
-				tplFile, err := os.OpenFile(tplFilename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
-				must.NoError(err)
-
-				defer func() {
-					must.NoError(tplFile.Close())
-				}()
 
 				must.NoError(os.WriteFile(
 					tplFilename,
@@ -170,23 +146,11 @@ func TestBuildCommand_Run(t *testing.T) {
 
 				// Init vars file
 				varsFilepath := filepath.Join(cmd.WorkDir, buildCmd.InputFile)
-				varsFile, err := os.OpenFile(varsFilepath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
-				must.NoError(err)
-
-				defer func() {
-					must.NoError(varsFile.Close())
-				}()
 
 				must.NoError(os.WriteFile(varsFilepath, []byte(`{"magic":{"status": "real"}}`), 0666))
 
 				// Init template file
 				tplFilename := filepath.Join(cmd.WorkDir, buildCmd.TemplateFile)
-				tplFile, err := os.OpenFile(tplFilename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
-				must.NoError(err)
-
-				defer func() {
-					must.NoError(tplFile.Close())
-				}()
 
 				must.NoError(os.WriteFile(
 					tplFilename,
@@ -204,6 +168,108 @@ func TestBuildCommand_Run(t *testing.T) {
 				t.Log("rendered:", output)
 				must.Contains(output, "I am sure the magic is real!", "placeholder failed")
 				must.Contains(output, "PS: you are wonder!", "placeholder failed")
+			},
+		},
+		{
+			name:           "batch",
+			args:           []string{"--input", "batch.json", "--format", "batch"},
+			expectedErr:    "",
+			expectedOutput: nil,
+			beforeBuild: func(sub Subcommand, cmd *Command) {
+				var ok bool
+				var buildCmd *BuildCommand
+
+				if buildCmd, ok = sub.(*BuildCommand); !ok {
+					t.Fatal("sub is not a BuildCommand")
+				}
+
+				cmd.WorkDir = t.TempDir()
+
+				t.Setenv("TEST_QUOTE", "ENV VAR!")
+
+				must.NoError(os.WriteFile(
+					filepath.Join(cmd.WorkDir, buildCmd.InputFile),
+					[]byte(`{
+  "items": [
+    {
+      "info": "This template will combine defaults with other values.",
+      "target": "rendered.txt",
+      "template": "custom.tpl",
+      "variables": {
+        "foo": "custom",
+        "extra": "extra value"
+      }
+    },
+    {
+	  "info": "Will use all defaults to render the template.",
+      "target": "with_defaults.txt"
+    }
+  ],
+  "defaults": {
+    "info": "This section defines default values to be used in the \"items\" section.",
+    "template": "default.tpl",
+    "variables": {
+      "foo": "bar",
+      "size": 42,
+      "nested": {"baz": "faz"}
+    }
+  }
+}
+`), 0666))
+
+				t.Setenv("TEST_QUOTE", "this is env variable")
+
+				must.NoError(os.WriteFile(
+					filepath.Join(cmd.WorkDir, "default.tpl"),
+					[]byte(`Default template with values:
+foo = {{ default "UNDEFINED" .foo }}
+size = {{ default "UNDEFINED" .size }}
+nested = {{ toJson .nested }}
+extra = {{ default "UNDEFINED" .extra }}
+ENV TEST_QUOTE = {{ env "TEST_QUOTE" }}
+`),
+					0666,
+				))
+
+				must.NoError(os.WriteFile(
+					filepath.Join(cmd.WorkDir, "custom.tpl"),
+					[]byte(`Custom template with values:
+foo = {{ default "UNDEFINED" .foo }}
+size = {{ default "UNDEFINED" .size }}
+nested = {{ toJson .nested }}
+extra = {{ default "UNDEFINED" .extra }}
+ENV TEST_QUOTE = {{ env "TEST_QUOTE" }}
+`),
+					0666,
+				))
+
+			},
+			afterBuild: func(sub Subcommand, cmd *Command) {
+				out, err := os.ReadFile(filepath.Join(cmd.WorkDir, "rendered.txt"))
+				must.NoError(err)
+
+				output := string(out)
+				t.Log("rendered.txt:", output)
+				must.Equal(`Custom template with values:
+foo = custom
+size = 42
+nested = {"baz":"faz"}
+extra = extra value
+ENV TEST_QUOTE = this is env variable
+`, output, "rendered.txt file is invalid")
+
+				out, err = os.ReadFile(filepath.Join(cmd.WorkDir, "with_defaults.txt"))
+				must.NoError(err)
+
+				output = string(out)
+				t.Log("with_defaults.txt:", output)
+				must.Equal(`Default template with values:
+foo = bar
+size = 42
+nested = {"baz":"faz"}
+extra = UNDEFINED
+ENV TEST_QUOTE = this is env variable
+`, output, "with_defaults.txt file is invalid")
 			},
 		},
 	}

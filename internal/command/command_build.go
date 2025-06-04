@@ -2,6 +2,7 @@ package command
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -99,38 +100,35 @@ func (c *BuildCommand) Run() error {
 		return c.runBatch()
 	}
 
-	//c.cmd.Fmt.Printf("<alert><bold>TBD. Needs implementation<reset>\n")
-
 	return c.runOnce()
 }
 
-func (c *BuildCommand) readTemplate() (string, error) {
-	var tplContents []byte
+func (c *BuildCommand) readInput(path string) ([]byte, error) {
+	var contents []byte
 	var err error
 
-	if c.TemplateFile == "" {
+	if path == "" {
 		if c.In == nil {
-			tplContents, err = io.ReadAll(os.Stdin) // default input stream
+			contents, err = io.ReadAll(os.Stdin) // default input stream
 		} else {
-			tplContents, err = io.ReadAll(c.In) // read from custom input io.Reader
+			contents, err = io.ReadAll(c.In) // read from custom input io.Reader
 		}
 	} else {
-		tplFile := c.TemplateFile
-		if !filepath.IsAbs(c.TemplateFile) {
-			tplFile = filepath.Join(c.cmd.WorkDir, c.TemplateFile)
+		if !filepath.IsAbs(path) {
+			path = filepath.Join(c.cmd.WorkDir, path)
 		}
 
-		tplContents, err = os.ReadFile(tplFile)
+		contents, err = os.ReadFile(path)
 	}
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return string(tplContents), nil
+	return contents, nil
 }
 
-func (c *BuildCommand) readVars() (parser.Params, error) {
+func (c *BuildCommand) readVars() (core.Params, error) {
 	var contents []byte
 	var err error
 
@@ -149,10 +147,10 @@ func (c *BuildCommand) readVars() (parser.Params, error) {
 	var varParser parser.Parser
 
 	switch c.InputFormat {
-	case "env":
-		varParser = c.getEnvParser(contents)
-	case "json":
-		varParser = c.getJSONParser(contents)
+	case FormatEnv:
+		varParser = c.getEnvParser(len(contents) > 0)
+	case FormatJson:
+		varParser = c.getJSONParser(len(contents) > 0)
 	default:
 		return nil, fmt.Errorf("invalid input format: %s", c.InputFormat)
 	}
@@ -164,13 +162,13 @@ func (c *BuildCommand) readVars() (parser.Params, error) {
 	return nil, nil // everything is fine but ono vars input found
 }
 
-func (c *BuildCommand) getEnvParser(contents []byte) parser.Parser {
+func (c *BuildCommand) getEnvParser(hasVars bool) parser.Parser {
 	if c.ClearEnv {
-		if len(contents) > 0 {
+		if hasVars {
 			return parser.NewEnvParser()
 		}
 	} else {
-		if len(contents) > 0 {
+		if hasVars {
 			return parser.NewChainParser(
 				parser.NewEnvParser(),
 				parser.NewEnvOsParser(),
@@ -183,13 +181,13 @@ func (c *BuildCommand) getEnvParser(contents []byte) parser.Parser {
 	return nil
 }
 
-func (c *BuildCommand) getJSONParser(contents []byte) parser.Parser {
+func (c *BuildCommand) getJSONParser(hasVars bool) parser.Parser {
 	if c.ClearEnv {
-		if len(contents) > 0 {
+		if hasVars {
 			return parser.NewJSONParser()
 		}
 	} else {
-		if len(contents) > 0 {
+		if hasVars {
 			return parser.NewChainParser(
 				parser.NewJSONParser(),
 				parser.NewEnvOsParser(),
@@ -202,33 +200,32 @@ func (c *BuildCommand) getJSONParser(contents []byte) parser.Parser {
 	return nil
 }
 
-func (c *BuildCommand) selectWriter() (io.Writer, error) {
-	if c.OutputFile == "" {
+func (c *BuildCommand) selectWriter(outputFile string) (io.Writer, error) {
+	if outputFile == "" {
 		return c.cmd.Output, nil
 	}
 
-	outputFile := c.OutputFile
 	if !filepath.IsAbs(outputFile) {
-		outputFile = filepath.Join(c.cmd.WorkDir, c.OutputFile)
+		outputFile = filepath.Join(c.cmd.WorkDir, outputFile)
 	}
 
 	return os.OpenFile(outputFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, MkFilePerm)
 }
 
 func (c *BuildCommand) runOnce() error {
-	tplContents, err := c.readTemplate()
+	tplContents, err := c.readInput(c.TemplateFile)
 	if err != nil {
 		return fmt.Errorf("template read: %w", err)
 	}
 
-	var params parser.Params
+	var params core.Params
 
 	params, err = c.readVars()
 	if err != nil {
 		return fmt.Errorf("variables read: %w", err)
 	}
 
-	writer, err := c.selectWriter()
+	writer, err := c.selectWriter(c.OutputFile)
 	if err != nil {
 		return fmt.Errorf("select writer: %w", err)
 	}
@@ -239,23 +236,79 @@ func (c *BuildCommand) runOnce() error {
 		}
 	}
 
-	builder := parser.NewTemplate(c.TemplateFile, tplContents, params)
+	builder := parser.NewTemplate(c.TemplateFile, string(tplContents), params)
 
 	return builder.Build(writer)
 }
 
 func (c *BuildCommand) runBatch() error {
-	contents, err := os.ReadFile(c.InputFile)
+	contents, err := c.readInput(c.InputFile)
 	if err != nil {
 		return err
 	}
 
-	var batch *core.Batch
-	if err := json.Unmarshal(contents, batch); err != nil {
+	var batch core.Batch
+	if err := json.Unmarshal(contents, &batch); err != nil {
 		return err
 	}
 
-	c.cmd.Fmt.Printf("<alert><bold>TBD: contents - %+v<reset>\n", batch)
+	if len(batch.Items) == 0 {
+		return errors.New("no items defined")
+	}
+
+	for _, item := range batch.Items {
+		if err = c.runBatchItem(item, batch.Defaults); err != nil {
+			return err
+		}
+	}
 
 	return nil
+}
+
+func (c *BuildCommand) runBatchItem(item core.BatchItem, defaults core.BatchDefault) error {
+	cfg := c.combineBatchItem(item, defaults)
+	contents, err := c.readInput(cfg.Template)
+	if err != nil {
+		return err
+	}
+
+	writer, err := c.selectWriter(cfg.Target)
+	if err != nil {
+		return fmt.Errorf("select writer: %w", err)
+	}
+
+	if !c.NoCloseWriter {
+		if oc, ok := writer.(io.Closer); ok {
+			defer oc.Close()
+		}
+	}
+
+	builder := parser.NewTemplate(cfg.Template, string(contents), cfg.Variables)
+	if err = builder.Build(writer); err != nil {
+		return fmt.Errorf("build: %w", err)
+	}
+
+	return nil
+}
+
+func (c *BuildCommand) combineBatchItem(item core.BatchItem, defaults core.BatchDefault) core.BatchItem {
+	if len(item.Info) == 0 {
+		item.Info = defaults.Info
+	}
+
+	if len(item.Template) == 0 {
+		item.Template = defaults.Template
+	}
+
+	if len(item.Variables) == 0 {
+		item.Variables = defaults.Variables
+	} else {
+		for k, v := range defaults.Variables {
+			if _, ok := item.Variables[k]; !ok {
+				item.Variables[k] = v
+			}
+		}
+	}
+
+	return item
 }

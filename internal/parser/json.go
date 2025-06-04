@@ -2,6 +2,8 @@ package parser
 
 import (
 	"encoding/json"
+
+	"github.com/bravepickle/templar/internal/core"
 )
 
 // JSONParser parses environment params
@@ -11,8 +13,8 @@ func (p *JSONParser) IsNil() bool {
 	return p == nil
 }
 
-func (p *JSONParser) Parse(in string) (Params, error) {
-	var out Params
+func (p *JSONParser) Parse(in string) (core.Params, error) {
+	var out core.Params
 	err := json.Unmarshal([]byte(in), &out)
 
 	return out, err

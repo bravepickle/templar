@@ -3,6 +3,7 @@ package parser
 import (
 	"testing"
 
+	"github.com/bravepickle/templar/internal/core"
 	"github.com/stretchr/testify/require"
 )
 
@@ -10,7 +11,7 @@ func TestChainParser(t *testing.T) {
 	must := require.New(t)
 
 	var err error
-	var actual Params
+	var actual core.Params
 
 	// case 1 - no parsers
 	parser := NewChainParser()

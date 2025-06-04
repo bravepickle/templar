@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	//"os"
-	//"strings"
+
+	"github.com/bravepickle/templar/internal/core"
 )
 
 // EnvOsParser parses OS environment params
@@ -16,9 +16,9 @@ func (p *EnvOsParser) IsNil() bool {
 }
 
 // Parse parses key-values from string and puts it to struct
-func (p *EnvOsParser) Parse(_ string) (Params, error) {
+func (p *EnvOsParser) Parse(_ string) (core.Params, error) {
 	lines := os.Environ()
-	result := Params{}
+	result := core.Params{}
 
 	for _, line := range lines {
 		split := strings.SplitN(line, `=`, 2)
