@@ -1,5 +1,5 @@
 # templar
-Small files generator from templates written in Golang
+Simple CLI templates generator written in Go without any external dependencies.
 
 Press *Ctrl+D* to stop writing to STDIN interactively
 
@@ -33,6 +33,7 @@ OS ENV -> item variables from batch file -> defaults in batch file
 - [ ] Add debug command to see all resulting variables available for the template
 - [ ] If debug is disabled then do not show error messages. Instead, show help blocks with non-zero exit code
 - [ ] Add SchemaJSON file for `batch.json` files.
+- [ ] Add support of JSONL format. For STDIN and other to stream data. Instead of ReadAll, we should process each template per line on-fly and skip blank lines.
 
 ## Usage
 ```

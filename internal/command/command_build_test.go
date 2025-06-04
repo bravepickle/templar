@@ -73,7 +73,7 @@ func TestBuildCommand_Run(t *testing.T) {
 		},
 		{
 			name:           "env",
-			args:           []string{"--input", ".env", "--format", "env", "--template", "template.tpl", "--output", "result.txt"},
+			args:           []string{"--vars", ".env", "--format", "env", "--template", "template.tpl", "--output", "result.txt"},
 			expectedErr:    "",
 			expectedOutput: nil,
 			beforeBuild: func(sub Subcommand, cmd *Command) {
@@ -117,7 +117,7 @@ func TestBuildCommand_Run(t *testing.T) {
 		},
 		{
 			name:           "stdout with clear env",
-			args:           []string{"--input", ".env", "--template", "template.tpl"},
+			args:           []string{"--vars", ".env", "--template", "template.tpl"},
 			expectedErr:    "",
 			expectedOutput: []string{"Test value: foo"},
 			beforeBuild: func(sub Subcommand, cmd *Command) {
@@ -152,15 +152,59 @@ func TestBuildCommand_Run(t *testing.T) {
 					0666,
 				))
 			},
-			//afterBuild: func(sub Subcommand, cmd *Command) {
-			//	out, err := os.ReadFile(filepath.Join(cmd.WorkDir, "result.txt"))
-			//	must.NoError(err)
-			//
-			//	output := string(out)
-			//	t.Log("rendered:", output)
-			//	must.Contains(output, "Test value: success", "placeholder failed")
-			//	must.Contains(output, "Default: zero", "defaults failed")
-			//},
+		},
+		{
+			name:           "json",
+			args:           []string{"--vars", "vars.json", "--format", "json", "--template", "file.tpl", "--output", "result.txt"},
+			expectedErr:    "",
+			expectedOutput: nil,
+			beforeBuild: func(sub Subcommand, cmd *Command) {
+				var ok bool
+				var buildCmd *BuildCommand
+
+				if buildCmd, ok = sub.(*BuildCommand); !ok {
+					t.Fatal("sub is not a BuildCommand")
+				}
+
+				cmd.WorkDir = t.TempDir()
+
+				// Init vars file
+				varsFilepath := filepath.Join(cmd.WorkDir, buildCmd.VarsFile)
+				varsFile, err := os.OpenFile(varsFilepath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+				must.NoError(err)
+
+				defer func() {
+					must.NoError(varsFile.Close())
+				}()
+
+				must.NoError(os.WriteFile(varsFilepath, []byte(`{"magic":{"status": "real"}}`), 0666))
+
+				// Init template file
+				tplFilename := filepath.Join(cmd.WorkDir, buildCmd.TemplateFile)
+				tplFile, err := os.OpenFile(tplFilename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+				must.NoError(err)
+
+				defer func() {
+					must.NoError(tplFile.Close())
+				}()
+
+				must.NoError(os.WriteFile(
+					tplFilename,
+					[]byte("I am sure the magic is {{ default \"boring\" .magic.status }}!\nPS: {{ env \"TEST_QUOTE\" }}"),
+					0666,
+				))
+
+				t.Setenv("TEST_QUOTE", "you are wonder!")
+			},
+			afterBuild: func(sub Subcommand, cmd *Command) {
+				out, err := os.ReadFile(filepath.Join(cmd.WorkDir, "result.txt"))
+				must.NoError(err)
+
+				output := string(out)
+				t.Log("rendered:", output)
+				must.Contains(output, "I am sure the magic is real!", "placeholder failed")
+				must.Contains(output, "PS: you are wonder!", "placeholder failed")
+			},
 		},
 	}
 	for _, d := range datasets {

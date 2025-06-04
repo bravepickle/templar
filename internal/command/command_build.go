@@ -18,7 +18,7 @@ type BuildCommand struct {
 	// In is the default stream to read input from for templates
 	In io.Reader
 
-	InputFile     string
+	VarsFile      string
 	OutputFile    string
 	InputFormat   string
 	TemplateFile  string
@@ -75,11 +75,11 @@ func (c *BuildCommand) Init(cmd *Command, args []string) error {
 	c.fs.SetOutput(c.cmd.Output)
 	c.fs.Usage = c.usage
 
-	c.fs.StringVar(&c.InputFile, "input", "", "input file path. Format should match \"-format\" value")
-	c.fs.StringVar(&c.InputFormat, "format", "env", "input file format. Allowed: env, json")
+	c.fs.StringVar(&c.VarsFile, "vars", "", "file path which contains variables for template to use. Format should match \"-format\" value")
+	c.fs.StringVar(&c.InputFormat, "format", "env", "input file format for variables' file. Allowed: env, json")
 	c.fs.StringVar(&c.OutputFile, "output", "", "output file path, If empty, outputs to stdout. If \"-batch\" option is used, specifies output directory")
 	c.fs.StringVar(&c.TemplateFile, "template", "", "template file path, If empty and \"-batch\" not defined, reads from stdin")
-	c.fs.StringVar(&c.BatchFile, "batch", "", "batch file path. Overrides some other fields, such as --variables")
+	c.fs.StringVar(&c.BatchFile, "batch", "", "batch file path. Overrides some other fields, such as -vars")
 	c.fs.BoolVar(&c.SkipExisting, "skip", false, "skip generation if target files already exist")
 	c.fs.BoolVar(&c.ClearEnv, "clear", false, "clear ENV variables before building variables to avoid collisions")
 
@@ -134,11 +134,11 @@ func (c *BuildCommand) readVars() (parser.Params, error) {
 	var contents []byte
 	var err error
 
-	if c.InputFile != "" {
-		if filepath.IsAbs(c.InputFile) {
-			contents, err = os.ReadFile(c.InputFile)
+	if c.VarsFile != "" {
+		if filepath.IsAbs(c.VarsFile) {
+			contents, err = os.ReadFile(c.VarsFile)
 		} else {
-			contents, err = os.ReadFile(filepath.Join(c.cmd.WorkDir, c.InputFile))
+			contents, err = os.ReadFile(filepath.Join(c.cmd.WorkDir, c.VarsFile))
 		}
 
 		if err != nil {
@@ -221,31 +221,6 @@ func (c *BuildCommand) runOnce() error {
 		return fmt.Errorf("template read: %w", err)
 	}
 
-	//var varParser parser.Parser
-	//
-	//switch c.InputFormat {
-	//case "env":
-	//	if c.ClearEnv {
-	//		varParser = parser.NewEnvParser()
-	//	} else {
-	//		varParser = parser.NewChainParser(
-	//			parser.NewEnvParser(),
-	//			parser.NewEnvOsParser(),
-	//		)
-	//	}
-	//case "json":
-	//	if c.ClearEnv {
-	//		varParser = parser.NewJSONParser()
-	//	} else {
-	//		varParser = parser.NewChainParser(
-	//			parser.NewJSONParser(),
-	//			parser.NewEnvOsParser(),
-	//		)
-	//	}
-	//default:
-	//	return fmt.Errorf("invalid input format: %s", c.InputFormat)
-	//}
-
 	var params parser.Params
 
 	params, err = c.readVars()
@@ -263,9 +238,6 @@ func (c *BuildCommand) runOnce() error {
 			defer oc.Close()
 		}
 	}
-
-	//fmt.Println("template contents:", tplContents)
-	//fmt.Printf("variables: %+v\n", params)
 
 	builder := parser.NewTemplate(c.TemplateFile, tplContents, params)
 

@@ -58,20 +58,11 @@ type Command struct {
 	// Disable CLI output colors
 	NoColor bool
 
-	//// Application environment
-	//Environment string
-
 	// Quiet suppresses STDOUT info messages
 	Quiet bool
 
 	// Suppress STDOUT info messages
 	Verbose bool
-
-	//// Clear ENV params before loading .env files
-	//ClearEnv bool
-	//
-	//// List of DotEnv files to use instead of default ones
-	//EnvFiles CmdInputFiles
 
 	// Configuration for processing user resolution and other
 	// ConfigFile string
@@ -90,9 +81,6 @@ type Command struct {
 
 	// fs results of parsing CLI command arguments excluding Subcommand
 	fs *flag.FlagSet
-
-	// Subcommand is a subcommand to run
-	Subcommand Subcommand
 
 	// Output is the stream to write output to
 	Output io.Writer
