@@ -88,7 +88,7 @@ type Command struct {
 	// Fmt styler of output
 	Fmt *core.PrinterFormatter
 
-	commands []Subcommand
+	commands map[string]Subcommand
 }
 
 func (c *Command) Init() error {
@@ -107,13 +107,12 @@ func (c *Command) Init() error {
 	c.fs.BoolVar(&c.Verbose, "verbose", false, "verbose output")
 	c.fs.StringVar(&c.WorkDir, "workdir", c.DefaultWorkDir, "working directory path")
 
-	c.commands = append(
-		c.commands,
-		&HelpCommand{},
-		&VersionCommand{},
-		&InitCommand{},
-		&BuildCommand{},
-	)
+	c.commands = map[string]Subcommand{
+		SubCommandHelp:    &HelpCommand{},
+		SubCommandVersion: &VersionCommand{},
+		SubCommandInit:    &InitCommand{},
+		SubCommandBuild:   &BuildCommand{},
+	}
 
 	var err error
 	for _, sub := range c.commands {
@@ -207,7 +206,6 @@ loop:
 		}
 	}
 
-	// TODO: show help for parent and all sub-commands
 	return nil
 }
 
@@ -231,19 +229,6 @@ type NewCommandOpts struct {
 	// App is an application for running command
 	App core.Application
 }
-
-//func subCommandInit(args []string, c Subcommand, cmd *Command) error {
-//	if c == nil || c.IsNil() || cmd == nil {
-//		return ErrNoCommand
-//	}
-//
-//	c.cmd = cmd
-//	c.fs = flag.NewFlagSet(c.Name(), flag.ContinueOnError)
-//	c.fs.SetOutput(c.cmd.Output)
-//	c.fs.Usage = c.usage
-//
-//	return c.fs.Parse(args)
-//}
 
 // NewCommand creates new command
 func NewCommand(opts NewCommandOpts) *Command {

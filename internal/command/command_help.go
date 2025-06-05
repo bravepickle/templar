@@ -24,12 +24,11 @@ func (c *HelpCommand) usage() {
 
 	c.cmd.Fmt.Printf("<info>Examples:<reset>\n  <debug>$ %s %s %s<reset>\n\n", c.cmd.Name, subName, SubCommandVersion)
 	c.cmd.Fmt.Printf("  %s:\n    Version: v0.0.1\n    GIT commit: c7a8949\n    Working directory: /home/user/templar\n", c.cmd.Name)
-
-	//c.fs.PrintDefaults()
 }
 
 func (c *HelpCommand) Summary() string {
-	return c.cmd.Fmt.Sprintf("show help information on command or subcommand usage. Type \"<debug>%s %s %s<reset>\" to see help command usage information", c.cmd.Name, c.Name(), c.Name())
+	return c.cmd.Fmt.Sprintf("show help information on command or subcommand usage. "+
+		"Type \"<debug>%s %s %s<reset>\" to see help command usage information", c.cmd.Name, c.Name(), c.Name())
 }
 
 func (c *HelpCommand) Usage() error {
@@ -47,10 +46,6 @@ func (c *HelpCommand) Init(cmd *Command, args []string) error {
 		return ErrNoCommand
 	}
 
-	//if len(args) != 1 {
-	//	return errors.New("command requires exactly one argument")
-	//}
-
 	c.cmd = cmd
 	c.fs = flag.NewFlagSet(c.Name(), flag.ContinueOnError)
 	c.fs.SetOutput(c.cmd.Output)
@@ -65,8 +60,6 @@ func (c *HelpCommand) IsNil() bool {
 
 func (c *HelpCommand) Run() error {
 	if c.fs == nil || !c.fs.Parsed() {
-		//c.usage()
-
 		return ErrNoInit
 	}
 
@@ -79,13 +72,11 @@ func (c *HelpCommand) Run() error {
 		return c.Usage()
 	}
 
-	//c.cmd.Fmt.Println("Target command:", targetCmd)
-
 	for _, sub := range c.cmd.commands {
 		if sub.Name() == targetCmd {
 			return sub.Usage()
 		}
 	}
 
-	return nil
+	return c.cmd.Usage()
 }
