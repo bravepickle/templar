@@ -18,4 +18,5 @@ func TestEnvOsParser(t *testing.T) {
 
 	must.NoError(err)
 	must.Subset(actual, expected)
+	must.False(parser.IsNil())
 }

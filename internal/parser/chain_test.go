@@ -44,4 +44,5 @@ x=555
 	actual, err = parser.Parse(`{"x": "y", "foo2": "baz"}`)
 	must.NoError(err)
 	must.Subset(actual, expected)
+	must.False(parser.IsNil())
 }

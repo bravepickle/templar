@@ -22,4 +22,5 @@ foo = bar
 
 	must.NoError(err)
 	must.Equal(expected, actual)
+	must.False(parser.IsNil())
 }

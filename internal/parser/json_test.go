@@ -17,4 +17,5 @@ func TestJSONParser(t *testing.T) {
 	actual, err := parser.Parse(in)
 	must.NoError(err)
 	must.Equal(expected, actual)
+	must.False(parser.IsNil())
 }
