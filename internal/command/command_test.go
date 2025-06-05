@@ -17,6 +17,7 @@ func initTestSubcommand(must *require.Assertions, targetCmd string, buf *bytes.B
 		App:     core.Application{},
 	})
 
+	cmd.App.Init()
 	must.NotNil(cmd)
 	must.NoError(cmd.Init(), "init failed")
 
