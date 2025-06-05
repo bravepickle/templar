@@ -331,6 +331,14 @@ func (c *BuildCommand) dumpParams(params core.Params) error {
 
 	if len(anyMap) > 0 {
 		for _, k := range keys {
+			if vm, ok := anyMap[k].(map[string]any); ok {
+				if v, err := json.Marshal(vm); err == nil {
+					c.cmd.Fmt.PrintfRaw("%s=%s\n", k, v)
+
+					continue
+				}
+			}
+
 			c.cmd.Fmt.PrintfRaw("%s=%#v\n", k, anyMap[k])
 		}
 
