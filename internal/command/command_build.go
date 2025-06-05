@@ -27,7 +27,7 @@ type BuildCommand struct {
 	TemplateFile  string
 	SkipExisting  bool
 	ClearEnv      bool
-	Dump          bool
+	Dump          string
 	NoCloseWriter bool
 }
 
@@ -89,10 +89,9 @@ func (c *BuildCommand) Init(cmd *Command, args []string) error {
 	c.fs.StringVar(&c.InputFormat, "format", "env", "input file format for variables' file. Allowed: "+strings.Join(AllowedFormats, ", "))
 	c.fs.StringVar(&c.OutputFile, "output", "", "output file path, If empty, outputs to stdout. If \"-batch\" option is used, specifies output directory")
 	c.fs.StringVar(&c.TemplateFile, "template", "", "template file path, If empty and \"-batch\" not defined, reads from stdin")
-	//c.fs.StringVar(&c.BatchFile, "batch", "", "batch file path. Overrides some other fields, such as -input")
+	c.fs.StringVar(&c.Dump, "dump", "env", "show all available variables for the template to use and stop processing. Pass optionally --verbose or --debug flags for more information. Allowed output formats: json, env")
 	c.fs.BoolVar(&c.SkipExisting, "skip", false, "skip generation if target files already exist")
 	c.fs.BoolVar(&c.ClearEnv, "clear", false, "clear ENV variables before building variables to avoid collisions")
-	c.fs.BoolVar(&c.Dump, "dump", false, "show all available variables for the template to use and stop processing. Shows its values when --debug flag is used. Add \"--format json\" to return in JSON format")
 
 	return c.fs.Parse(args)
 }
@@ -235,7 +234,7 @@ func (c *BuildCommand) runOnce() error {
 		return fmt.Errorf("variables read: %w", err)
 	}
 
-	if c.Dump {
+	if c.Dump != "" {
 		return c.dumpParams(params)
 	}
 
@@ -255,39 +254,91 @@ func (c *BuildCommand) runOnce() error {
 	return builder.Build(writer)
 }
 
+func (c *BuildCommand) prepareVarsForDump(params core.Params) ([]string, map[string]string, map[string]any) {
+	if len(params) == 0 {
+		return nil, nil, nil
+	}
+
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+
+	slices.Sort(keys)
+
+	if c.cmd.Debug {
+		data := map[string]any{}
+
+		for _, k := range keys {
+			data[k] = params[k]
+		}
+
+		return keys, nil, data
+	}
+
+	if c.cmd.Verbose {
+		data := map[string]string{}
+
+		for _, k := range keys {
+			data[k] = fmt.Sprintf("%T", params[k])
+		}
+
+		return keys, data, nil
+	}
+
+	return keys, nil, nil
+}
+
 func (c *BuildCommand) dumpParams(params core.Params) error {
-	if c.InputFormat == FormatJson {
-		if output, err := json.MarshalIndent(params, "", "  "); err != nil {
+	keys, strMap, anyMap := c.prepareVarsForDump(params)
+
+	if c.Dump == FormatJson {
+		var data any
+		if len(strMap) > 0 {
+			data = strMap
+		} else if len(anyMap) > 0 {
+			data = anyMap
+		} else if len(keys) > 0 {
+			data = keys
+		} else {
+			return nil
+		}
+
+		if output, err := json.MarshalIndent(data, "", "  "); err != nil {
 			return err
 		} else {
-			c.cmd.Fmt.PrintRaw(string(output))
+			c.cmd.Fmt.PrintRaw(string(output) + "\n")
+
 			return nil
 		}
 	}
 
-	if len(params) == 0 {
+	if len(keys) == 0 {
 		if c.cmd.Debug || c.cmd.Verbose {
-			c.cmd.Fmt.Println("No variables found")
-		}
-	} else {
-		keys := make([]string, 0, len(params))
-		for k, _ := range params {
-			keys = append(keys, k)
+			c.cmd.Fmt.PrintfRaw("No variables found\n")
 		}
 
-		slices.Sort(keys)
+		return nil
+	}
 
+	if len(strMap) > 0 {
 		for _, k := range keys {
-			if c.cmd.Debug {
-				c.cmd.Fmt.Printf("%s=%#v\n", k, params[k])
-			} else {
-				if c.cmd.Verbose {
-					c.cmd.Fmt.Printf("%s=<%T>\n", k, params[k])
-				} else {
-					c.cmd.Fmt.Println(k)
-				}
-			}
+			c.cmd.Fmt.PrintfRaw("%s=%s\n", k, strMap[k])
 		}
+
+		return nil
+	}
+
+	if len(anyMap) > 0 {
+		for _, k := range keys {
+			c.cmd.Fmt.PrintfRaw("%s=%#v\n", k, anyMap[k])
+		}
+
+		return nil
+	}
+
+	for _, k := range keys {
+		c.cmd.Fmt.PrintRaw(k + "\n")
 	}
 
 	return nil

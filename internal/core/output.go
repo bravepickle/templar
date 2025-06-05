@@ -49,6 +49,11 @@ func (f *PrinterFormatter) Printf(msg string, args ...any) {
 		msg = strings.ReplaceAll(msg, k, v)
 	}
 
+	f.PrintfRaw(msg, args...)
+}
+
+// PrintfRaw prints out to Stdout formatted and colorized string
+func (f *PrinterFormatter) PrintfRaw(msg string, args ...any) {
 	if _, err := fmt.Fprintf(f.Writer, msg, args...); err != nil {
 		panic(fmt.Errorf(`failed to printf: %w`, err))
 	}
