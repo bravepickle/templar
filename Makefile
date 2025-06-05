@@ -24,9 +24,9 @@ OUT_TESTS_COVER ?= ./tests_coverprofile.out
 
 # build flags
 GIT_COMMIT ?= $(shell git rev-list -1 HEAD | cut -c 1-7)
-LDFLAGS ?= -X github.com/bravepickle/templar.GitCommitHash=$(GIT_COMMIT) \
-	-X github.com/bravepickle/templar.AppName=$(APP_NAME) \
-	-X github.com/bravepickle/templar.AppVersion=$(APP_VERSION)
+LDFLAGS ?= -X main.GitCommitHash=$(GIT_COMMIT) \
+	-X main.AppName=$(APP_NAME) \
+	-X main.AppVersion=$(APP_VERSION)
 
 # skip staticheck linting
 SKIP_STATICCHECK ?=
