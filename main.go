@@ -1,79 +1,79 @@
 package main
 
 import (
-	"flag"
-	"log"
+	"fmt"
+	"io"
 	"os"
+
+	"github.com/bravepickle/templar/internal/command"
+	"github.com/bravepickle/templar/internal/core"
 )
 
-// Parser interface is a common parser interface for all input formats
-type Parser interface {
-	GetParams() interface{}
-}
-
-func init() {
-	initCommands()
-}
+var AppName string
+var AppVersion string
+var GitCommitHash string
+var WorkDir string
 
 func main() {
-	checkVerbosity()
-
-	if flag.NArg() > 0 {
-		switch flag.Arg(0) {
-		case "list":
-			index := CommandIndexArg(`list`)
-			if index == -1 {
-				log.Fatal(`Not found command position`)
-				os.Exit(1)
-			}
-
-			listCommand.Parse(os.Args[index+1:])
-
-			if InputListCommand.ShowHelp() {
-				printListUsage()
-				os.Exit(0)
-			}
-
-			doList()
-			os.Exit(0)
-		case "build":
-			index := CommandIndexArg(`build`)
-			if index == -1 {
-				log.Fatal(`Not found command position`)
-				os.Exit(1)
-			}
-
-			runCommand.Parse(os.Args[index+1:])
-
-			if InputRunCommand.ShowHelp() {
-				printRunUsage()
-				os.Exit(0)
-			}
-
-			doBuild()
-			os.Exit(0)
-		case "init":
-			index := CommandIndexArg(`init`)
-			if index == -1 {
-				log.Fatal(`Not found command position`)
-				os.Exit(1)
-			}
-
-			initCommand.Parse(os.Args[index+1:])
-
-			if InputInitCommand.ShowHelp() {
-				printInitUsage()
-				os.Exit(0)
-			}
-
-			doInit()
-			os.Exit(0)
-		default:
-			printUsage()
-			os.Exit(1)
-		}
+	if err := RunCommand(AppName, os.Args[1:], os.Stdout, AppVersion, GitCommitHash, WorkDir); err != nil {
+		os.Exit(1)
 	}
 
-	printUsage()
 	os.Exit(0)
+}
+
+func RunCommand(name string, args []string, w io.Writer, version string, commit string, workdir string) error {
+	if name == "" {
+		name = core.DefaultAppName
+	}
+
+	app := core.Application{
+		Version:       version,
+		GitCommitHash: commit,
+	}
+
+	app.Init()
+
+	cmd := command.NewCommand(command.NewCommandOpts{
+		Name:    name,
+		Args:    args,
+		Output:  w,
+		WorkDir: workdir,
+		App:     app,
+	})
+
+	if err := cmd.Init(); err != nil {
+		if cmd.Debug {
+			err = fmt.Errorf("%s init: %w", cmd.Name, err)
+			_, _ = fmt.Fprintln(os.Stderr, err)
+		}
+
+		if err = cmd.Usage(); err != nil {
+			err = fmt.Errorf("%s usage: %w", cmd.Name, err)
+			if cmd.Debug {
+				_, _ = fmt.Fprintln(os.Stderr, err)
+			}
+		}
+
+		return err
+	}
+
+	if err := cmd.Run(); err != nil {
+		if cmd.Debug {
+			err = fmt.Errorf("%s run: %w", cmd.Name, err)
+			_, _ = fmt.Fprintln(os.Stderr, err)
+		}
+
+		if err = cmd.Usage(); err != nil {
+			err = fmt.Errorf("%s usage: %w", cmd.Name, err)
+
+			if cmd.Debug {
+				_, _ = fmt.Fprintln(os.Stderr, err)
+			}
+		}
+
+		return err
+	}
+
+	return nil
 }
