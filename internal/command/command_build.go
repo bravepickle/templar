@@ -57,6 +57,13 @@ func (c *BuildCommand) usage() {
 
   <debug>$ echo "My name is {{ .NAME }}" | NAME=John %[1]s build<reset>
       # generates output.txt file from the provided template.tpl and provided env variable
+
+  <debug>$ %[1]s build --format json --input vars.json --dump env<reset>
+      # dumps to stdout combined OS ENV and JSON variables. Used to check what variables are available
+
+  <debug>$ %[1]s --debug build --input vars.env --dump json --clear<reset>
+      # dump variables in JSON format and display their values (--debug flag was added). OS ENV variables will be omitted
+
 `, c.cmd.Name)
 
 }
@@ -228,20 +235,20 @@ func (c *BuildCommand) selectWriter(outputFile string) (io.Writer, error) {
 }
 
 func (c *BuildCommand) runOnce() error {
-	tplContents, err := c.readInput(c.TemplateFile)
-	if err != nil {
-		return fmt.Errorf("template read: %w", err)
-	}
-
 	var params core.Params
 
-	params, err = c.readVars()
+	params, err := c.readVars()
 	if err != nil {
 		return fmt.Errorf("variables read: %w", err)
 	}
 
 	if c.Dump != "" {
 		return c.dumpParams(params)
+	}
+
+	tplContents, err := c.readInput(c.TemplateFile)
+	if err != nil {
+		return fmt.Errorf("template read: %w", err)
 	}
 
 	writer, err := c.selectWriter(c.OutputFile)
