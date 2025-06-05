@@ -85,11 +85,17 @@ func (c *BuildCommand) Init(cmd *Command, args []string) error {
 	c.fs.SetOutput(c.cmd.Output)
 	c.fs.Usage = c.usage
 
-	c.fs.StringVar(&c.InputFile, "input", "", "file path which contains variables for template to use or batch file. Format should match \"-format\" value")
-	c.fs.StringVar(&c.InputFormat, "format", "env", "input file format for variables' file. Allowed: "+strings.Join(AllowedFormats, ", "))
-	c.fs.StringVar(&c.OutputFile, "output", "", "output file path, If empty, outputs to stdout. If \"-batch\" option is used, specifies output directory")
-	c.fs.StringVar(&c.TemplateFile, "template", "", "template file path, If empty and \"-batch\" not defined, reads from stdin")
-	c.fs.StringVar(&c.Dump, "dump", "", "show all available variables for the template to use and stop processing. Pass optionally --verbose or --debug flags for more information. Allowed output formats: json, env")
+	c.fs.StringVar(&c.InputFile, "input", "", "file path which contains variables for template "+
+		"to use or batch file. Format should match \"-format\" value")
+	c.fs.StringVar(&c.InputFormat, "format", "env", "input file format for variables' file. Allowed: "+
+		strings.Join(AllowedInputFormats, ", "))
+	c.fs.StringVar(&c.OutputFile, "output", "", "output file path, If empty, outputs to stdout. "+
+		"If \"-batch\" option is used, specifies output directory")
+	c.fs.StringVar(&c.TemplateFile, "template", "", "template file path, If empty and \"-batch\" "+
+		"not defined, reads from stdin")
+	c.fs.StringVar(&c.Dump, "dump", "", "show all available variables for the template to use and stop processing. "+
+		"Pass optionally --verbose or --debug flags for more information. Allowed dump formats: "+
+		strings.Join(AllowedDumpFormats, ", "))
 	c.fs.BoolVar(&c.SkipExisting, "skip", false, "skip generation if target files already exist")
 	c.fs.BoolVar(&c.ClearEnv, "clear", false, "clear ENV variables before building variables to avoid collisions")
 
@@ -292,25 +298,8 @@ func (c *BuildCommand) prepareVarsForDump(params core.Params) ([]string, map[str
 func (c *BuildCommand) dumpParams(params core.Params) error {
 	keys, strMap, anyMap := c.prepareVarsForDump(params)
 
-	if c.Dump == FormatJson {
-		var data any
-		if len(strMap) > 0 {
-			data = strMap
-		} else if len(anyMap) > 0 {
-			data = anyMap
-		} else if len(keys) > 0 {
-			data = keys
-		} else {
-			return nil
-		}
-
-		if output, err := json.MarshalIndent(data, "", "  "); err != nil {
-			return err
-		} else {
-			c.cmd.Fmt.PrintRaw(string(output) + "\n")
-
-			return nil
-		}
+	if c.Dump == FormatJson || c.Dump == FormatJsonCompact {
+		return c.dumpParamsJson(strMap, anyMap, keys)
 	}
 
 	if len(keys) == 0 {
@@ -350,6 +339,37 @@ func (c *BuildCommand) dumpParams(params core.Params) error {
 	}
 
 	return nil
+}
+
+func (c *BuildCommand) dumpParamsJson(strMap map[string]string, anyMap map[string]any, keys []string) error {
+	var data any
+	if len(strMap) > 0 {
+		data = strMap
+	} else if len(anyMap) > 0 {
+		data = anyMap
+	} else if len(keys) > 0 {
+		data = keys
+	} else {
+		return nil
+	}
+
+	if c.Dump == FormatJsonCompact {
+		if output, err := json.Marshal(data); err != nil {
+			return err
+		} else {
+			c.cmd.Fmt.PrintRaw(string(output) + "\n")
+
+			return nil
+		}
+	}
+
+	if output, err := json.MarshalIndent(data, "", "  "); err != nil {
+		return err
+	} else {
+		c.cmd.Fmt.PrintRaw(string(output) + "\n")
+
+		return nil
+	}
 }
 
 func (c *BuildCommand) runBatch() error {

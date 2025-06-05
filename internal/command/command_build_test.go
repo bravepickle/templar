@@ -201,7 +201,6 @@ func TestBuildCommand_Run(t *testing.T) {
       }
     },
     {
-	  "info": "Will use all defaults to render the template.",
       "target": "with_defaults.txt"
     }
   ],
@@ -272,6 +271,144 @@ ENV TEST_QUOTE = this is env variable
 `, output, "with_defaults.txt file is invalid")
 			},
 		},
+		{
+			name:        "debug dump env",
+			args:        []string{"--input", "vars.json", "--format", "json", "--clear", "--dump", "env"},
+			expectedErr: "",
+			expectedOutput: []string{
+				"foo=\"myJSON\"",
+				`user={"age":42,"name":"John"}`,
+			},
+			beforeBuild: func(sub Subcommand, cmd *Command) {
+				cmd.Debug = true
+
+				var ok bool
+				var buildCmd *BuildCommand
+
+				if buildCmd, ok = sub.(*BuildCommand); !ok {
+					t.Fatal("sub is not a BuildCommand")
+				}
+
+				cmd.WorkDir = t.TempDir()
+
+				must.NoError(os.WriteFile(
+					filepath.Join(cmd.WorkDir, buildCmd.InputFile),
+					[]byte(`{"foo": "myJSON", "user":{"name":"John", "age": 42}}`), 0666))
+
+				t.Setenv("TEST_QUOTE", "this is env variable")
+			},
+		},
+		{
+			name:        "debug dump json",
+			args:        []string{"--input", "vars.json", "--format", "json", "--clear", "--dump", "json"},
+			expectedErr: "",
+			expectedOutput: []string{
+				`"foo": "myJSON"`,
+				`"age": 42`,
+			},
+			beforeBuild: func(sub Subcommand, cmd *Command) {
+				cmd.Debug = true
+
+				var ok bool
+				var buildCmd *BuildCommand
+
+				if buildCmd, ok = sub.(*BuildCommand); !ok {
+					t.Fatal("sub is not a BuildCommand")
+				}
+
+				cmd.WorkDir = t.TempDir()
+
+				must.NoError(os.WriteFile(
+					filepath.Join(cmd.WorkDir, buildCmd.InputFile),
+					[]byte(`{"foo": "myJSON", "user":{"name":"John", "age": 42}}`), 0666))
+			},
+		},
+		{
+			name:           "debug dump json",
+			args:           []string{"--input", "vars.json", "--format", "json", "--clear", "--dump", "json_compact"},
+			expectedErr:    "",
+			expectedOutput: []string{`{"foo":"myJSON","user":{"age":42,"name":"John"}}`},
+			beforeBuild: func(sub Subcommand, cmd *Command) {
+				cmd.Debug = true
+
+				var ok bool
+				var buildCmd *BuildCommand
+
+				if buildCmd, ok = sub.(*BuildCommand); !ok {
+					t.Fatal("sub is not a BuildCommand")
+				}
+
+				cmd.WorkDir = t.TempDir()
+
+				must.NoError(os.WriteFile(
+					filepath.Join(cmd.WorkDir, buildCmd.InputFile),
+					[]byte(`{"foo": "myJSON", "user":{"name":"John", "age": 42}}`), 0666))
+			},
+		},
+		{
+			name:           "verbose dump env",
+			args:           []string{"--input", "vars.json", "--format", "json", "--clear", "--dump", "env"},
+			expectedErr:    "",
+			expectedOutput: []string{`foo=string`, `user=map[string]interface {}`},
+			beforeBuild: func(sub Subcommand, cmd *Command) {
+				cmd.Verbose = true
+
+				var ok bool
+				var buildCmd *BuildCommand
+
+				if buildCmd, ok = sub.(*BuildCommand); !ok {
+					t.Fatal("sub is not a BuildCommand")
+				}
+
+				cmd.WorkDir = t.TempDir()
+
+				must.NoError(os.WriteFile(
+					filepath.Join(cmd.WorkDir, buildCmd.InputFile),
+					[]byte(`{"foo": "myJSON", "user":{"name":"John", "age": 42}}`), 0666))
+			},
+		},
+		{
+			name:           "basic dump env",
+			args:           []string{"--input", "vars.json", "--format", "json", "--clear", "--dump", "env"},
+			expectedErr:    "",
+			expectedOutput: []string{"foo\nuser\n"},
+			beforeBuild: func(sub Subcommand, cmd *Command) {
+				var ok bool
+				var buildCmd *BuildCommand
+
+				if buildCmd, ok = sub.(*BuildCommand); !ok {
+					t.Fatal("sub is not a BuildCommand")
+				}
+
+				cmd.WorkDir = t.TempDir()
+
+				must.NoError(os.WriteFile(
+					filepath.Join(cmd.WorkDir, buildCmd.InputFile),
+					[]byte(`{"foo": "myJSON", "user":{"name":"John", "age": 42}}`), 0666))
+			},
+		},
+		{
+			name:           "empty verbose dump env",
+			args:           []string{"--input", "vars.json", "--format", "env", "--clear", "--dump", "env"},
+			expectedErr:    "",
+			expectedOutput: []string{"No variables found"},
+			beforeBuild: func(sub Subcommand, cmd *Command) {
+				cmd.Verbose = true
+
+				var ok bool
+				var buildCmd *BuildCommand
+
+				if buildCmd, ok = sub.(*BuildCommand); !ok {
+					t.Fatal("sub is not a BuildCommand")
+				}
+
+				cmd.WorkDir = t.TempDir()
+
+				must.NoError(os.WriteFile(
+					filepath.Join(cmd.WorkDir, buildCmd.InputFile),
+					[]byte(``), 0666))
+			},
+		},
 	}
 	for _, d := range datasets {
 		t.Run(d.name, func(t *testing.T) {
@@ -322,6 +459,16 @@ func TestBuildCommand_ErrorsHandling(t *testing.T) {
 	sub := &BuildCommand{}
 	must.Error(ErrNoInit, sub.Run())
 
-	//in, err := sub.readTemplate()
-	//must.Error(, sub.Run())
+	// read from stdin empty string
+	in, err := sub.readInput("")
+	must.NoError(err)
+	must.Equal([]byte{}, in, "stdin is not empty")
+
+	buf := bytes.NewBufferString("test me")
+
+	// read from the input file
+	sub.In = buf
+	in, err = sub.readInput("")
+	must.NoError(err)
+	must.Equal("test me", string(in), "input reader mismatch")
 }

@@ -8,9 +8,11 @@ const MkFilePerm = 0644
 
 const FormatEnv = "env"
 const FormatJson = "json"
+const FormatJsonCompact = "json_compact"
 const FormatBatch = "batch"
 
-var AllowedFormats = []string{FormatEnv, FormatJson, FormatBatch}
+var AllowedInputFormats = []string{FormatEnv, FormatJson, FormatBatch}
+var AllowedDumpFormats = []string{FormatEnv, FormatJson, FormatJsonCompact}
 
 const ExampleEnv = `
 # This is an example environment variable configuration file.
