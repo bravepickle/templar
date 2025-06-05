@@ -89,7 +89,7 @@ func (c *BuildCommand) Init(cmd *Command, args []string) error {
 	c.fs.StringVar(&c.InputFormat, "format", "env", "input file format for variables' file. Allowed: "+strings.Join(AllowedFormats, ", "))
 	c.fs.StringVar(&c.OutputFile, "output", "", "output file path, If empty, outputs to stdout. If \"-batch\" option is used, specifies output directory")
 	c.fs.StringVar(&c.TemplateFile, "template", "", "template file path, If empty and \"-batch\" not defined, reads from stdin")
-	c.fs.StringVar(&c.Dump, "dump", "env", "show all available variables for the template to use and stop processing. Pass optionally --verbose or --debug flags for more information. Allowed output formats: json, env")
+	c.fs.StringVar(&c.Dump, "dump", "", "show all available variables for the template to use and stop processing. Pass optionally --verbose or --debug flags for more information. Allowed output formats: json, env")
 	c.fs.BoolVar(&c.SkipExisting, "skip", false, "skip generation if target files already exist")
 	c.fs.BoolVar(&c.ClearEnv, "clear", false, "clear ENV variables before building variables to avoid collisions")
 
