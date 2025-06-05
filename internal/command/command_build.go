@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/bravepickle/templar/internal/core"
@@ -26,6 +27,7 @@ type BuildCommand struct {
 	TemplateFile  string
 	SkipExisting  bool
 	ClearEnv      bool
+	Dump          bool
 	NoCloseWriter bool
 }
 
@@ -46,8 +48,16 @@ func (c *BuildCommand) usage() {
 	c.fs.PrintDefaults()
 	c.cmd.Fmt.Println(``)
 
-	c.cmd.Fmt.Printf("<info>Examples:<reset>\n  $ %s %s\n\n", c.cmd.Name, subName)
-	c.cmd.Fmt.Println("  TBD\n") // <<<<<<<<<<<<<<<<<<<<<!!!!!
+	c.cmd.Fmt.Println("<info>Examples:<reset>")
+	c.cmd.Fmt.Printf(`  <debug>$ %[1]s build --input .env --format env --template template.tpl --output output.txt<reset> 
+      # generates output.txt file from the provided template.tpl and .env variables in env format (is the default one, can be ommitted)
+
+  <debug>$ NAME=John %[1]s build --template template.tpl --output output.txt<reset>
+      # generates output.txt file from the provided template.tpl and provided env variable
+
+  <debug>$ echo "My name is {{ .NAME }}" | NAME=John %[1]s build<reset>
+      # generates output.txt file from the provided template.tpl and provided env variable
+`, c.cmd.Name)
 
 }
 
@@ -82,6 +92,7 @@ func (c *BuildCommand) Init(cmd *Command, args []string) error {
 	//c.fs.StringVar(&c.BatchFile, "batch", "", "batch file path. Overrides some other fields, such as -input")
 	c.fs.BoolVar(&c.SkipExisting, "skip", false, "skip generation if target files already exist")
 	c.fs.BoolVar(&c.ClearEnv, "clear", false, "clear ENV variables before building variables to avoid collisions")
+	c.fs.BoolVar(&c.Dump, "dump", false, "show all available variables for the template to use and stop processing. Shows its values when --debug flag is used. Add \"--format json\" to return in JSON format")
 
 	return c.fs.Parse(args)
 }
@@ -224,6 +235,10 @@ func (c *BuildCommand) runOnce() error {
 		return fmt.Errorf("variables read: %w", err)
 	}
 
+	if c.Dump {
+		return c.dumpParams(params)
+	}
+
 	writer, err := c.selectWriter(c.OutputFile)
 	if err != nil {
 		return fmt.Errorf("select writer: %w", err)
@@ -238,6 +253,44 @@ func (c *BuildCommand) runOnce() error {
 	builder := parser.NewTemplate(c.TemplateFile, string(tplContents), params)
 
 	return builder.Build(writer)
+}
+
+func (c *BuildCommand) dumpParams(params core.Params) error {
+	if c.InputFormat == FormatJson {
+		if output, err := json.MarshalIndent(params, "", "  "); err != nil {
+			return err
+		} else {
+			c.cmd.Fmt.PrintRaw(string(output))
+			return nil
+		}
+	}
+
+	if len(params) == 0 {
+		if c.cmd.Debug || c.cmd.Verbose {
+			c.cmd.Fmt.Println("No variables found")
+		}
+	} else {
+		keys := make([]string, 0, len(params))
+		for k, _ := range params {
+			keys = append(keys, k)
+		}
+
+		slices.Sort(keys)
+
+		for _, k := range keys {
+			if c.cmd.Debug {
+				c.cmd.Fmt.Printf("%s=%#v\n", k, params[k])
+			} else {
+				if c.cmd.Verbose {
+					c.cmd.Fmt.Printf("%s=<%T>\n", k, params[k])
+				} else {
+					c.cmd.Fmt.Println(k)
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 func (c *BuildCommand) runBatch() error {

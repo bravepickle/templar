@@ -22,7 +22,7 @@ func (c *VersionCommand) usage() {
 	c.cmd.Fmt.Printf("Usage: <debug>%s [OPTIONS] %s<reset>\n\n", c.cmd.Name, subName)
 	c.cmd.Fmt.Printf("<debug>%-10s<reset> %s\n\n", subName, c.Summary())
 
-	c.cmd.Fmt.Printf("<info>Examples:<reset>\n  $ %s %s\n\n", c.cmd.Name, subName)
+	c.cmd.Fmt.Printf("<debug>Examples:<reset>\n  <comment>$ %s %s<reset>\n\n", c.cmd.Name, subName)
 	c.cmd.Fmt.Printf("  %s:\n    Version: v0.0.1\n    GIT commit: c7a8949\n    Working directory: /usr/local/bin/templar\n", c.cmd.Name)
 	//c.fs.PrintDefaults()
 }

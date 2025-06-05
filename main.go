@@ -15,6 +15,10 @@ var GitCommitHash string
 var WorkDir string
 
 func main() {
+	//fmt.Printf("AppName: %s\n", AppName)
+	//fmt.Printf("AppVersion: %s\n", AppVersion)
+	//fmt.Printf("GitCommitHash: %s\n", GitCommitHash)
+
 	if err := RunCommand(AppName, os.Args[1:], os.Stdout, AppVersion, GitCommitHash, WorkDir); err != nil {
 		os.Exit(1)
 	}

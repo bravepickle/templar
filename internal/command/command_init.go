@@ -32,8 +32,8 @@ func (c *InitCommand) usage() {
 	c.cmd.Fmt.Println(``)
 
 	c.cmd.Fmt.Println("<info>Examples:<reset>")
-	c.cmd.Fmt.Printf("  $ %-40s # init project under current working directory\n", c.cmd.Name+" init")
-	c.cmd.Fmt.Printf("  $ %-40s # init project in custom working directory\n", c.cmd.Name+" --workdir ~/.templar init")
+	c.cmd.Fmt.Printf("  <debug>$ %-40s<reset> # init project under current working directory\n", c.cmd.Name+" init")
+	c.cmd.Fmt.Printf("  <debug>$ %-40s<reset> # init project in custom working directory\n", c.cmd.Name+" --workdir ~/.templar init")
 }
 
 func (c *InitCommand) Usage() error {

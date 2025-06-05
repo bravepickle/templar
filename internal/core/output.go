@@ -74,6 +74,11 @@ func (f *PrinterFormatter) Print(args ...any) {
 		}
 	}
 
+	f.PrintRaw(args...)
+}
+
+// PrintRaw prints out data without any formatting
+func (f *PrinterFormatter) PrintRaw(args ...any) {
 	if _, err := fmt.Fprint(f.Writer, args...); err != nil {
 		panic(fmt.Errorf(`failed to print: %w`, err))
 	}
@@ -81,8 +86,6 @@ func (f *PrinterFormatter) Print(args ...any) {
 
 // Println prints formatted text with styles and new line at the end
 func (f *PrinterFormatter) Println(msg string, args ...any) {
-	//f.Print("aaa", args...)
-
 	for k, v := range f.Styles {
 		msg = strings.ReplaceAll(msg, k, v)
 	}

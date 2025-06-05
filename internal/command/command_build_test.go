@@ -314,3 +314,14 @@ ENV TEST_QUOTE = this is env variable
 		})
 	}
 }
+
+func TestBuildCommand_ErrorsHandling(t *testing.T) {
+	must := require.New(t)
+	//targetCmd := SubCommandBuild
+
+	sub := &BuildCommand{}
+	must.Error(ErrNoInit, sub.Run())
+
+	//in, err := sub.readTemplate()
+	//must.Error(, sub.Run())
+}
