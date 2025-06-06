@@ -27,17 +27,9 @@ func main() {
 
 func alertCommandFailed(cmd *command.Command, err error) {
 	if cmd.Debug {
-		if cmd.Fmt != nil {
-			cmd.Fmt.Printf("<alert>%s<reset>\n\n", err)
-		} else {
-			_, _ = fmt.Fprintln(os.Stderr, err.Error()+"\n")
-		}
+		_, _ = fmt.Fprintln(os.Stderr, err.Error()+"\n")
 	} else {
-		if cmd.Fmt != nil {
-			cmd.Fmt.Printf("<alert>%s<reset>\n\n", ErrCommandFailed)
-		} else {
-			_, _ = fmt.Fprintln(os.Stderr, ErrCommandFailed.Error()+"\n")
-		}
+		_, _ = fmt.Fprintln(os.Stderr, ErrCommandFailed.Error()+"\n")
 	}
 }
 
