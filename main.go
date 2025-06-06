@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -8,6 +9,8 @@ import (
 	"github.com/bravepickle/templar/internal/command"
 	"github.com/bravepickle/templar/internal/core"
 )
+
+var ErrCommandFailed = errors.New("command failed")
 
 var AppName string
 var AppVersion string
@@ -20,6 +23,22 @@ func main() {
 	}
 
 	os.Exit(0)
+}
+
+func alertCommandFailed(cmd *command.Command, err error) {
+	if cmd.Debug {
+		if cmd.Fmt != nil {
+			cmd.Fmt.Printf("<alert>%s<reset>\n\n", err)
+		} else {
+			_, _ = fmt.Fprintln(os.Stderr, err.Error()+"\n")
+		}
+	} else {
+		if cmd.Fmt != nil {
+			cmd.Fmt.Printf("<alert>%s<reset>\n\n", ErrCommandFailed)
+		} else {
+			_, _ = fmt.Fprintln(os.Stderr, ErrCommandFailed.Error()+"\n")
+		}
+	}
 }
 
 func RunCommand(name string, args []string, w io.Writer, version string, commit string, workdir string) error {
@@ -43,34 +62,19 @@ func RunCommand(name string, args []string, w io.Writer, version string, commit 
 	})
 
 	if err := cmd.Init(); err != nil {
-		if cmd.Debug {
-			err = fmt.Errorf("%s init: %w", cmd.Name, err)
-			_, _ = fmt.Fprintln(os.Stderr, err)
-		}
+		alertCommandFailed(cmd, fmt.Errorf("init: %w", err))
 
 		if err = cmd.Usage(); err != nil {
-			err = fmt.Errorf("%s usage: %w", cmd.Name, err)
-			if cmd.Debug {
-				_, _ = fmt.Fprintln(os.Stderr, err)
-			}
+			alertCommandFailed(cmd, fmt.Errorf("usage: %w", err))
+
+			return err
 		}
 
 		return err
 	}
 
 	if err := cmd.Run(); err != nil {
-		if cmd.Debug {
-			err = fmt.Errorf("%s run: %w", cmd.Name, err)
-			_, _ = fmt.Fprintln(os.Stderr, err)
-		}
-
-		if err = cmd.Usage(); err != nil {
-			err = fmt.Errorf("%s usage: %w", cmd.Name, err)
-
-			if cmd.Debug {
-				_, _ = fmt.Fprintln(os.Stderr, err)
-			}
-		}
+		alertCommandFailed(cmd, fmt.Errorf("run: %w", err))
 
 		return err
 	}
