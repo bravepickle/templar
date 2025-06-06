@@ -54,7 +54,10 @@ APP_DOC_SERVER ?= localhost:8080
 
 GOCMD ?= go
 
-APP_RELEASE_SUFFIX=-$(shell $(GOCMD) env GOARCH)-$(shell $(GOCMD) env GOOS)
+GOOS ?= $(shell $(GOCMD) env GOOS)
+GOARCH ?= $(shell $(GOCMD) env GOARCH)
+
+APP_RELEASE_SUFFIX=-$(GOARCH)-$(GOOS)
 
 .DEFAULT_GOAL := build
 

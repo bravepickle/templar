@@ -6,16 +6,40 @@ type Params map[string]any
 type BatchVariables map[string]any
 
 type BatchItem struct {
-	Info      string `json:"info,omitempty"`
+	// Info description of the item
+	Info string `json:"info,omitempty"`
+
+	// InputFormat is a input format. Allowed: env, json
+	InputFormat string `json:"format,omitempty"`
+
+	// Input is a source file for input variables
+	Input string `json:"input,omitempty"`
+
+	// Variables is a list of variables to apply. Exclusive to Input
 	Variables Params `json:"variables,omitempty"`
-	Template  string `json:"template,omitempty"`
-	Target    string `json:"target,omitempty"`
+
+	// Template is a template file
+	Template string `json:"template,omitempty"`
+
+	// Target is a target file to write results to. Will overwrite contents
+	Target string `json:"target,omitempty"`
 }
 
 type BatchDefault struct {
-	Info      string `json:"info,omitempty"`
+	// Info description of the item
+	Info string `json:"info,omitempty"`
+
+	// InputFormat is a input format
+	InputFormat string `json:"format,omitempty"`
+
+	// Input is a source file for input variables
+	Input string `json:"input,omitempty"`
+
+	// Variables is a list of variables to apply. Exclusive to Input
 	Variables Params `json:"variables,omitempty"`
-	Template  string `json:"template,omitempty"`
+
+	// Template is a template file
+	Template string `json:"template,omitempty"`
 }
 
 type Batch struct {

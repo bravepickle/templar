@@ -30,7 +30,7 @@ See also (default functions and usages)[https://golang.org/pkg/text/template/#hd
 OS ENV -> item variables from batch file -> defaults in batch file
 
 ## TODO
-- [ ] Add binary executables for some of the architectures
+- [x] Add binary executables for some of the architectures
 - [ ] Read docs with installation and usage instructions
 - [ ] Provide examples
 - [ ] Support types: text, html
@@ -48,6 +48,8 @@ OS ENV -> item variables from batch file -> defaults in batch file
 - [ ] If debug is disabled then do not show error messages. Instead, show help blocks with non-zero exit code
 - [ ] Add SchemaJSON file for `batch.json` files.
 - [ ] Add support of JSONL format. For STDIN and other to stream data. Instead of ReadAll, we should process each template per line on-fly and skip blank lines.
+- [ ] Batch support input formats - env, json
+- [ ] `--verbose`, `--debug` flags reconsider their application
 
 ## Usage
 ### Main command

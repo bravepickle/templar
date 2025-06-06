@@ -55,7 +55,7 @@ const ExampleBatchJson = `{
   ],
   "defaults": {
     "info": "This section defines default values to be used in the \"items\" section.",
-    "template": "./templates/template.txt.tpl",
+    "template": "./templates/example.tpl",
     "variables": {
       "FOO": "bar",
       "NUMBER": 42,
@@ -70,7 +70,7 @@ const ExampleBatchJson = `{
 // ExampleTemplate is an example template
 const ExampleTemplate = `
 This is an example of template for templar to use
-{{ .GREET }} and {{ .BOOL }}.
+{{ .FOO }} and {{ .extra }}.
 {{ if .debug -}}
 Debug is enabled
 {{ end }}

@@ -150,15 +150,15 @@ func (c *BuildCommand) readInput(path string) ([]byte, error) {
 	return contents, nil
 }
 
-func (c *BuildCommand) readVars() (core.Params, error) {
+func (c *BuildCommand) readVars(inputFile string, format string) (core.Params, error) {
 	var contents []byte
 	var err error
 
-	if c.InputFile != "" {
-		if filepath.IsAbs(c.InputFile) {
-			contents, err = os.ReadFile(c.InputFile)
+	if inputFile != "" {
+		if filepath.IsAbs(inputFile) {
+			contents, err = os.ReadFile(inputFile)
 		} else {
-			contents, err = os.ReadFile(filepath.Join(c.cmd.WorkDir, c.InputFile))
+			contents, err = os.ReadFile(filepath.Join(c.cmd.WorkDir, inputFile))
 		}
 
 		if err != nil {
@@ -168,7 +168,7 @@ func (c *BuildCommand) readVars() (core.Params, error) {
 
 	var varParser parser.Parser
 
-	switch c.InputFormat {
+	switch format {
 	case FormatEnv:
 		varParser = c.getEnvParser(len(contents) > 0)
 	case FormatJson:
@@ -237,7 +237,7 @@ func (c *BuildCommand) selectWriter(outputFile string) (io.Writer, error) {
 func (c *BuildCommand) runOnce() error {
 	var params core.Params
 
-	params, err := c.readVars()
+	params, err := c.readVars(c.InputFile, c.InputFormat)
 	if err != nil {
 		return fmt.Errorf("variables read: %w", err)
 	}
@@ -421,7 +421,19 @@ func (c *BuildCommand) runBatchItem(item core.BatchItem, defaults core.BatchDefa
 		}
 	}
 
-	builder := parser.NewTemplate(cfg.Template, string(contents), cfg.Variables)
+	var vars core.Params
+	if len(cfg.Variables) == 0 {
+		if vars, err = c.readVars(cfg.Input, cfg.InputFormat); err != nil {
+			return err
+		}
+	} else {
+		vars = core.Params{}
+		for k, v := range cfg.Variables {
+			vars[k] = v
+		}
+	}
+
+	builder := parser.NewTemplate(cfg.Template, string(contents), vars)
 	if err = builder.Build(writer); err != nil {
 		return fmt.Errorf("build: %w", err)
 	}
@@ -438,12 +450,19 @@ func (c *BuildCommand) combineBatchItem(item core.BatchItem, defaults core.Batch
 		item.Template = defaults.Template
 	}
 
-	if len(item.Variables) == 0 {
-		item.Variables = defaults.Variables
+	if len(item.Variables) == 0 { // no vars
+		if len(item.Input) == 0 { // no input file
+			item.Variables = defaults.Variables
+		}
 	} else {
-		for k, v := range defaults.Variables {
-			if _, ok := item.Variables[k]; !ok {
-				item.Variables[k] = v
+		if len(defaults.Variables) == 0 {
+			item.Input = defaults.Input
+			item.InputFormat = defaults.InputFormat
+		} else {
+			for k, v := range defaults.Variables {
+				if _, ok := item.Variables[k]; !ok {
+					item.Variables[k] = v
+				}
 			}
 		}
 	}
