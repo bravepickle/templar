@@ -96,6 +96,14 @@ func (c *BuildCommand) Init(cmd *Command, args []string) error {
 	c.fs.SetOutput(c.cmd.Output)
 	c.fs.Usage = c.usage
 
+	if c.In == nil {
+		if cmd.Input == nil {
+			return errors.New("input stream is nil")
+		}
+
+		c.In = cmd.Input
+	}
+
 	c.fs.StringVar(&c.InputFile, "input", "", "file path which contains variables for template "+
 		"to use or batch file. Format should match \"-format\" value")
 	c.fs.StringVar(&c.InputFormat, "format", "env", "input file format for variables' file. Allowed: "+
@@ -135,10 +143,15 @@ func (c *BuildCommand) readInput(path string) ([]byte, error) {
 
 	if path == "" {
 		if c.In == nil {
-			contents, err = io.ReadAll(os.Stdin) // default input stream
-		} else {
-			contents, err = io.ReadAll(c.In) // read from custom input io.Reader
+			return nil, errors.New("input stream is nil")
 		}
+
+		// is the data is being piped in terminal?
+		if stat, _ := c.In.Stat(); (stat.Mode() & os.ModeCharDevice) != 0 {
+			return []byte{}, nil
+		}
+
+		contents, err = io.ReadAll(c.In) // read from custom input io.Reader
 	} else {
 		if !filepath.IsAbs(path) {
 			path = filepath.Join(c.cmd.WorkDir, path)
@@ -264,6 +277,10 @@ func (c *BuildCommand) runOnce() error {
 		if oc, ok := writer.(io.Closer); ok {
 			defer oc.Close()
 		}
+	}
+
+	if len(tplContents) == 0 {
+		return errors.New("no template contents provided")
 	}
 
 	builder := parser.NewTemplate(c.TemplateFile, string(tplContents), params)

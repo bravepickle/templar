@@ -55,14 +55,14 @@ func TestBuildCommand_Run(t *testing.T) {
 		beforeBuild    func(sub Subcommand, cmd *Command)
 		afterBuild     func(sub Subcommand, cmd *Command)
 	}{
-		//{
-		//	name:           "no input",
-		//	args:           nil,
-		//	expectedErr:    "no template file specified",
-		//	expectedOutput: nil,
-		//	beforeBuild:    nil,
-		//	afterBuild:     nil,
-		//},
+		{
+			name:           "no input",
+			args:           nil,
+			expectedErr:    "no template contents provided",
+			expectedOutput: nil,
+			beforeBuild:    nil,
+			afterBuild:     nil,
+		},
 		{
 			name:           "invalid batch path",
 			args:           []string{"--input", "unknown.txt", "--format", "batch"},
@@ -547,8 +547,13 @@ TEST_QUOTE = SRC_OS_ENV
 func TestBuildCommand_ErrorsHandling(t *testing.T) {
 	must := require.New(t)
 	//targetCmd := SubCommandBuild
+	buf := bytes.NewBuffer([]byte{})
 
-	sub := &BuildCommand{}
+	sc, cmd := initTestSubcommand(must, SubCommandBuild, buf)
+	sub, ok := sc.(*BuildCommand)
+	must.True(ok)
+
+	must.NoError(sub.Init(cmd, nil))
 	must.Error(ErrNoInit, sub.Run())
 
 	// read from stdin empty string
