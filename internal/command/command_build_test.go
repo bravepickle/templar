@@ -464,10 +464,22 @@ func TestBuildCommand_ErrorsHandling(t *testing.T) {
 	must.NoError(err)
 	must.Equal([]byte{}, in, "stdin is not empty")
 
-	buf := bytes.NewBufferString("test me")
+	r, w, err := os.Pipe()
+	must.NoError(err)
+	closed := false
+	defer func() {
+		if !closed {
+			must.NoError(w.Close())
+		}
+	}()
+	_, err = w.Write([]byte("test me"))
+	must.NoError(err)
+
+	closed = true
+	must.NoError(w.Close())
 
 	// read from the input file
-	sub.In = buf
+	sub.In = r
 	in, err = sub.readInput("")
 	must.NoError(err)
 	must.Equal("test me", string(in), "input reader mismatch")

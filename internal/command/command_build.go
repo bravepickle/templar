@@ -18,8 +18,9 @@ import (
 type BuildCommand struct {
 	cmd *Command
 	fs  *flag.FlagSet
+
 	// In is the default stream to read input from for templates
-	In io.Reader
+	In *os.File
 
 	InputFile     string
 	OutputFile    string

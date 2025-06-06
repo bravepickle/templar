@@ -85,6 +85,10 @@ type Command struct {
 	// Output is the stream to write output to
 	Output io.Writer
 
+	// Input streams input to command for interaction.
+	// E.g. STDIN, file, keyboard etc.
+	Input *os.File
+
 	// Fmt styler of output
 	Fmt *core.PrinterFormatter
 
@@ -107,11 +111,15 @@ func (c *Command) Init() error {
 	c.fs.BoolVar(&c.Verbose, "verbose", false, "verbose output")
 	c.fs.StringVar(&c.WorkDir, "workdir", c.DefaultWorkDir, "working directory path")
 
+	if c.Input == nil {
+		c.Input = os.Stdin // defaults
+	}
+
 	c.commands = map[string]Subcommand{
 		SubCommandHelp:    &HelpCommand{},
 		SubCommandVersion: &VersionCommand{},
 		SubCommandInit:    &InitCommand{},
-		SubCommandBuild:   &BuildCommand{},
+		SubCommandBuild:   &BuildCommand{In: c.Input},
 	}
 
 	var err error
@@ -220,6 +228,9 @@ type NewCommandOpts struct {
 	// Output is the stream to write output to
 	Output io.Writer
 
+	// Input input data stream
+	Input *os.File
+
 	// NoColor disables coloring and styling
 	NoColor bool
 
@@ -235,6 +246,7 @@ func NewCommand(opts NewCommandOpts) *Command {
 	return &Command{
 		Name:           opts.Name,
 		Args:           opts.Args,
+		Input:          opts.Input,
 		Output:         opts.Output,
 		DefaultWorkDir: opts.WorkDir,
 		Fmt:            core.NewPrinterFormatter(opts.NoColor, opts.Output),
