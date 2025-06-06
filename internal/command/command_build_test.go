@@ -251,8 +251,8 @@ ENV TEST_QUOTE = {{ env "TEST_QUOTE" }}
 				t.Log("rendered.txt:", output)
 				must.Equal(`Custom template with values:
 foo = custom
-size = 42
-nested = {"baz":"faz"}
+size = UNDEFINED
+nested = null
 extra = extra value
 ENV TEST_QUOTE = this is env variable
 `, output, "rendered.txt file is invalid")
@@ -268,6 +268,98 @@ size = 42
 nested = {"baz":"faz"}
 extra = UNDEFINED
 ENV TEST_QUOTE = this is env variable
+`, output, "with_defaults.txt file is invalid")
+			},
+		},
+		{
+			name:           "batch with input files",
+			args:           []string{"--input", "batch.json", "--format", "batch"},
+			expectedErr:    "",
+			expectedOutput: nil,
+			beforeBuild: func(sub Subcommand, cmd *Command) {
+				var ok bool
+				var buildCmd *BuildCommand
+
+				if buildCmd, ok = sub.(*BuildCommand); !ok {
+					t.Fatal("sub is not a BuildCommand")
+				}
+
+				cmd.WorkDir = t.TempDir()
+
+				t.Setenv("TEST_QUOTE", "SRC_OS_ENV")
+
+				must.NoError(os.WriteFile(
+					filepath.Join(cmd.WorkDir, buildCmd.InputFile),
+					[]byte(`{
+  "items": [
+    {
+      "target": "rendered.txt",
+      "template": "custom.tpl",
+      "format": "env",
+      "input": "custom.env"
+    },
+    {
+      "target": "with_defaults.txt"
+    }
+  ],
+  "defaults": {
+    "template": "default.tpl",
+    "format": "json",
+    "input": "default.json"
+  }
+}
+`), 0666))
+
+				must.NoError(os.WriteFile(
+					filepath.Join(cmd.WorkDir, "default.json"),
+					[]byte(`{"test_var": "SRC_JSON"}`),
+					0666,
+				))
+
+				must.NoError(os.WriteFile(
+					filepath.Join(cmd.WorkDir, "default.tpl"),
+					[]byte(`Default template:
+test_var = {{ .test_var }}
+TEST_QUOTE = {{ env "TEST_QUOTE" }}
+`),
+					0666,
+				))
+
+				must.NoError(os.WriteFile(
+					filepath.Join(cmd.WorkDir, "custom.env"),
+					[]byte("test_var=SRC_ENV"),
+					0666,
+				))
+
+				must.NoError(os.WriteFile(
+					filepath.Join(cmd.WorkDir, "custom.tpl"),
+					[]byte(`Custom template:
+test_var = {{ .test_var }}
+TEST_QUOTE = {{ env "TEST_QUOTE" }}
+`),
+					0666,
+				))
+
+			},
+			afterBuild: func(sub Subcommand, cmd *Command) {
+				out, err := os.ReadFile(filepath.Join(cmd.WorkDir, "rendered.txt"))
+				must.NoError(err)
+
+				output := string(out)
+				t.Log("rendered.txt:", output)
+				must.Equal(`Custom template:
+test_var = SRC_ENV
+TEST_QUOTE = SRC_OS_ENV
+`, output, "rendered.txt file is invalid")
+
+				out, err = os.ReadFile(filepath.Join(cmd.WorkDir, "with_defaults.txt"))
+				must.NoError(err)
+
+				output = string(out)
+				t.Log("with_defaults.txt:", output)
+				must.Equal(`Default template:
+test_var = SRC_JSON
+TEST_QUOTE = SRC_OS_ENV
 `, output, "with_defaults.txt file is invalid")
 			},
 		},

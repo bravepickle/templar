@@ -65,6 +65,9 @@ func (c *BuildCommand) usage() {
   <debug>$ %[1]s --debug build --input vars.env --dump json --clear<reset>
       # dump variables in JSON format and display their values (--debug flag was added). OS ENV variables will be omitted
 
+  <debug>$ %[1]s --workdir ~/.project build --format batch --input batch.json<reset>
+      # build multiple files from batch.json file. Working directory before running script will be changed to ~/.project. 
+      # To see file format run the command "%[1]s init" and see generated examples
 `, c.cmd.Name)
 
 }
@@ -451,19 +454,13 @@ func (c *BuildCommand) combineBatchItem(item core.BatchItem, defaults core.Batch
 		item.Template = defaults.Template
 	}
 
-	if len(item.Variables) == 0 { // no vars
-		if len(item.Input) == 0 { // no input file
-			item.Variables = defaults.Variables
-		}
-	} else {
-		if len(defaults.Variables) == 0 {
-			item.Input = defaults.Input
-			item.InputFormat = defaults.InputFormat
-		} else {
-			for k, v := range defaults.Variables {
-				if _, ok := item.Variables[k]; !ok {
-					item.Variables[k] = v
-				}
+	if len(item.Variables) == 0 { // no vars in current item
+		if len(item.Input) == 0 { // no input file in current item
+			if len(defaults.Variables) == 0 {
+				item.Input = defaults.Input
+				item.InputFormat = defaults.InputFormat
+			} else {
+				item.Variables = defaults.Variables
 			}
 		}
 	}
