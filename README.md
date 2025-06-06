@@ -50,6 +50,7 @@ OS ENV -> item variables from batch file -> defaults in batch file
 - [ ] Add support of JSONL format. For STDIN and other to stream data. Instead of ReadAll, we should process each template per line on-fly and skip blank lines.
 - [ ] Batch support input formats - env, json
 - [ ] `--verbose`, `--debug` flags reconsider their application
+- [ ] Read from stdin only if some flag passed. E.g. `--input -`
 
 ## Usage
 ### Main command

@@ -18,8 +18,9 @@ import (
 type BuildCommand struct {
 	cmd *Command
 	fs  *flag.FlagSet
+
 	// In is the default stream to read input from for templates
-	In io.Reader
+	In *os.File
 
 	InputFile     string
 	OutputFile    string
@@ -64,6 +65,9 @@ func (c *BuildCommand) usage() {
   <debug>$ %[1]s --debug build --input vars.env --dump json --clear<reset>
       # dump variables in JSON format and display their values (--debug flag was added). OS ENV variables will be omitted
 
+  <debug>$ %[1]s --workdir ~/.project build --format batch --input batch.json<reset>
+      # build multiple files from batch.json file. Working directory before running script will be changed to ~/.project. 
+      # To see file format run the command "%[1]s init" and see generated examples
 `, c.cmd.Name)
 
 }
@@ -91,6 +95,14 @@ func (c *BuildCommand) Init(cmd *Command, args []string) error {
 	c.fs = flag.NewFlagSet(c.Name(), flag.ContinueOnError)
 	c.fs.SetOutput(c.cmd.Output)
 	c.fs.Usage = c.usage
+
+	if c.In == nil {
+		if cmd.Input == nil {
+			return errors.New("input stream is nil")
+		}
+
+		c.In = cmd.Input
+	}
 
 	c.fs.StringVar(&c.InputFile, "input", "", "file path which contains variables for template "+
 		"to use or batch file. Format should match \"-format\" value")
@@ -131,10 +143,15 @@ func (c *BuildCommand) readInput(path string) ([]byte, error) {
 
 	if path == "" {
 		if c.In == nil {
-			contents, err = io.ReadAll(os.Stdin) // default input stream
-		} else {
-			contents, err = io.ReadAll(c.In) // read from custom input io.Reader
+			return nil, errors.New("input stream is nil")
 		}
+
+		// is the data is being piped in terminal?
+		if stat, _ := c.In.Stat(); (stat.Mode() & os.ModeCharDevice) != 0 {
+			return []byte{}, nil
+		}
+
+		contents, err = io.ReadAll(c.In) // read from custom input io.Reader
 	} else {
 		if !filepath.IsAbs(path) {
 			path = filepath.Join(c.cmd.WorkDir, path)
@@ -260,6 +277,10 @@ func (c *BuildCommand) runOnce() error {
 		if oc, ok := writer.(io.Closer); ok {
 			defer oc.Close()
 		}
+	}
+
+	if len(tplContents) == 0 {
+		return errors.New("no template contents provided")
 	}
 
 	builder := parser.NewTemplate(c.TemplateFile, string(tplContents), params)
@@ -450,19 +471,13 @@ func (c *BuildCommand) combineBatchItem(item core.BatchItem, defaults core.Batch
 		item.Template = defaults.Template
 	}
 
-	if len(item.Variables) == 0 { // no vars
-		if len(item.Input) == 0 { // no input file
-			item.Variables = defaults.Variables
-		}
-	} else {
-		if len(defaults.Variables) == 0 {
-			item.Input = defaults.Input
-			item.InputFormat = defaults.InputFormat
-		} else {
-			for k, v := range defaults.Variables {
-				if _, ok := item.Variables[k]; !ok {
-					item.Variables[k] = v
-				}
+	if len(item.Variables) == 0 { // no vars in current item
+		if len(item.Input) == 0 { // no input file in current item
+			if len(defaults.Variables) == 0 {
+				item.Input = defaults.Input
+				item.InputFormat = defaults.InputFormat
+			} else {
+				item.Variables = defaults.Variables
 			}
 		}
 	}

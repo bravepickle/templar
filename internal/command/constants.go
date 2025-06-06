@@ -49,7 +49,7 @@ const ExampleBatchJson = `{
       }
     },
     {
-	  "info": "Will use all defaults to render the template.",
+      "info": "Will use all defaults to render the template.",
       "target": "with_defaults.txt"
     }
   ],

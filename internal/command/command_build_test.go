@@ -55,14 +55,14 @@ func TestBuildCommand_Run(t *testing.T) {
 		beforeBuild    func(sub Subcommand, cmd *Command)
 		afterBuild     func(sub Subcommand, cmd *Command)
 	}{
-		//{
-		//	name:           "no input",
-		//	args:           nil,
-		//	expectedErr:    "no template file specified",
-		//	expectedOutput: nil,
-		//	beforeBuild:    nil,
-		//	afterBuild:     nil,
-		//},
+		{
+			name:           "no input",
+			args:           nil,
+			expectedErr:    "no template contents provided",
+			expectedOutput: nil,
+			beforeBuild:    nil,
+			afterBuild:     nil,
+		},
 		{
 			name:           "invalid batch path",
 			args:           []string{"--input", "unknown.txt", "--format", "batch"},
@@ -251,8 +251,8 @@ ENV TEST_QUOTE = {{ env "TEST_QUOTE" }}
 				t.Log("rendered.txt:", output)
 				must.Equal(`Custom template with values:
 foo = custom
-size = 42
-nested = {"baz":"faz"}
+size = UNDEFINED
+nested = null
 extra = extra value
 ENV TEST_QUOTE = this is env variable
 `, output, "rendered.txt file is invalid")
@@ -268,6 +268,98 @@ size = 42
 nested = {"baz":"faz"}
 extra = UNDEFINED
 ENV TEST_QUOTE = this is env variable
+`, output, "with_defaults.txt file is invalid")
+			},
+		},
+		{
+			name:           "batch with input files",
+			args:           []string{"--input", "batch.json", "--format", "batch"},
+			expectedErr:    "",
+			expectedOutput: nil,
+			beforeBuild: func(sub Subcommand, cmd *Command) {
+				var ok bool
+				var buildCmd *BuildCommand
+
+				if buildCmd, ok = sub.(*BuildCommand); !ok {
+					t.Fatal("sub is not a BuildCommand")
+				}
+
+				cmd.WorkDir = t.TempDir()
+
+				t.Setenv("TEST_QUOTE", "SRC_OS_ENV")
+
+				must.NoError(os.WriteFile(
+					filepath.Join(cmd.WorkDir, buildCmd.InputFile),
+					[]byte(`{
+  "items": [
+    {
+      "target": "rendered.txt",
+      "template": "custom.tpl",
+      "format": "env",
+      "input": "custom.env"
+    },
+    {
+      "target": "with_defaults.txt"
+    }
+  ],
+  "defaults": {
+    "template": "default.tpl",
+    "format": "json",
+    "input": "default.json"
+  }
+}
+`), 0666))
+
+				must.NoError(os.WriteFile(
+					filepath.Join(cmd.WorkDir, "default.json"),
+					[]byte(`{"test_var": "SRC_JSON"}`),
+					0666,
+				))
+
+				must.NoError(os.WriteFile(
+					filepath.Join(cmd.WorkDir, "default.tpl"),
+					[]byte(`Default template:
+test_var = {{ .test_var }}
+TEST_QUOTE = {{ env "TEST_QUOTE" }}
+`),
+					0666,
+				))
+
+				must.NoError(os.WriteFile(
+					filepath.Join(cmd.WorkDir, "custom.env"),
+					[]byte("test_var=SRC_ENV"),
+					0666,
+				))
+
+				must.NoError(os.WriteFile(
+					filepath.Join(cmd.WorkDir, "custom.tpl"),
+					[]byte(`Custom template:
+test_var = {{ .test_var }}
+TEST_QUOTE = {{ env "TEST_QUOTE" }}
+`),
+					0666,
+				))
+
+			},
+			afterBuild: func(sub Subcommand, cmd *Command) {
+				out, err := os.ReadFile(filepath.Join(cmd.WorkDir, "rendered.txt"))
+				must.NoError(err)
+
+				output := string(out)
+				t.Log("rendered.txt:", output)
+				must.Equal(`Custom template:
+test_var = SRC_ENV
+TEST_QUOTE = SRC_OS_ENV
+`, output, "rendered.txt file is invalid")
+
+				out, err = os.ReadFile(filepath.Join(cmd.WorkDir, "with_defaults.txt"))
+				must.NoError(err)
+
+				output = string(out)
+				t.Log("with_defaults.txt:", output)
+				must.Equal(`Default template:
+test_var = SRC_JSON
+TEST_QUOTE = SRC_OS_ENV
 `, output, "with_defaults.txt file is invalid")
 			},
 		},
@@ -455,8 +547,13 @@ ENV TEST_QUOTE = this is env variable
 func TestBuildCommand_ErrorsHandling(t *testing.T) {
 	must := require.New(t)
 	//targetCmd := SubCommandBuild
+	buf := bytes.NewBuffer([]byte{})
 
-	sub := &BuildCommand{}
+	sc, cmd := initTestSubcommand(must, SubCommandBuild, buf)
+	sub, ok := sc.(*BuildCommand)
+	must.True(ok)
+
+	must.NoError(sub.Init(cmd, nil))
 	must.Error(ErrNoInit, sub.Run())
 
 	// read from stdin empty string
@@ -464,10 +561,22 @@ func TestBuildCommand_ErrorsHandling(t *testing.T) {
 	must.NoError(err)
 	must.Equal([]byte{}, in, "stdin is not empty")
 
-	buf := bytes.NewBufferString("test me")
+	r, w, err := os.Pipe()
+	must.NoError(err)
+	closed := false
+	defer func() {
+		if !closed {
+			must.NoError(w.Close())
+		}
+	}()
+	_, err = w.Write([]byte("test me"))
+	must.NoError(err)
+
+	closed = true
+	must.NoError(w.Close())
 
 	// read from the input file
-	sub.In = buf
+	sub.In = r
 	in, err = sub.readInput("")
 	must.NoError(err)
 	must.Equal("test me", string(in), "input reader mismatch")
