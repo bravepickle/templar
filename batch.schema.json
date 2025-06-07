@@ -1,18 +1,70 @@
 {
-  "title" : "Templar batch items schema",
-  "description" : "Is used for transforming data to proper structure. Fields order are mandatory to follow. Also, can be used to validate the generated JSONs",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "/schemas/predictor.schema.json",
-  "type": "array",
-  "items" : {
-    "type": "object",
-    "title": "Batch config item",
-    "required": ["input", "output"],
-    "properties": {
-      "input": {"type": "string", "title": "Template file path"},
-      "output": {"type": "string", "title": "Output file path"},
-      "data": {"type": ["array", "object"], "title": "Template variables"}
+  "title": "Templar's batch file schema",
+  "$id": "https://github.com/bravepickle/templar/batch.schema.json",
+  "type": "object",
+  "required": ["items"],
+  "properties": {
+    "items": {
+      "description": "List of template meta data for build",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "info": {
+            "type": "string",
+            "description": "Describes current template"
+          },
+          "format": {
+            "type": "string",
+            "enum": ["", "env", "json"],
+            "description": "Input format for data. If \"variables\" property is defined or no variables should be implictly defined leave this value blank or omit it.",
+            "default": ""
+          },
+          "output": {
+            "type": "string",
+            "description": "Output file path. Can be absolute or relevant to the working directory specified in command."
+          },
+          "template": {
+            "type": "string",
+            "description": "Path to a template. Can be absolute or relevant to the working directory."
+          },
+          "variables": {
+            "type": "object",
+            "description": "Lists of variables and their values for the template to use. Will be combined with OS ENV variables.",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "defaults": {
+      "type": "object",
+      "required": ["template", "variables"],
+      "properties": {
+        "info": {
+          "type": "string",
+          "description": "Describes defaults section"
+        },
+        "format": {
+          "type": "string",
+          "enum": ["env", "json", ""],
+          "description": "Input format for data. If \"variables\" property is defined or no variables should be implictly defined leave this value blank or omit it.",
+          "default": ""
+        },
+        "template": {
+          "type": "string",
+          "description": "Path to a template. Can be absolute or relevant to the working directory."
+        },
+        "variables": {
+          "type": "object",
+          "description": "Lists of variables and their values for the template to use. Will be combined with OS ENV variables.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
     }
   },
-  "minItems" : 1
+  "additionalProperties": true
 }
