@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/bravepickle/templar/internal/core"
+	"github.com/bravepickle/templar/v2/internal/core"
 )
 
 // ChainParser parsing environment params from parsers chain.

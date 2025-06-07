@@ -6,8 +6,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/bravepickle/templar/internal/command"
-	"github.com/bravepickle/templar/internal/core"
+	"github.com/bravepickle/templar/v2/internal/command"
+	"github.com/bravepickle/templar/v2/internal/core"
 )
 
 var ErrCommandFailed = errors.New("command failed")

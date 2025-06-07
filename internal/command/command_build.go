@@ -11,8 +11,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/bravepickle/templar/internal/core"
-	"github.com/bravepickle/templar/internal/parser"
+	"github.com/bravepickle/templar/v2/internal/core"
+	"github.com/bravepickle/templar/v2/internal/parser"
 )
 
 type BuildCommand struct {

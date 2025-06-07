@@ -10,7 +10,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/bravepickle/templar/internal/core"
+	"github.com/bravepickle/templar/v2/internal/core"
 )
 
 const (
