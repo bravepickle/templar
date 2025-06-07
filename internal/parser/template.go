@@ -5,7 +5,7 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig"
-	"github.com/bravepickle/templar/v2/internal/core"
+	"github.com/bravepickle/templar/internal/core"
 )
 
 type TemplateBuilder struct {

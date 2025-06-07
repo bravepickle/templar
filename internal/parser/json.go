@@ -3,7 +3,7 @@ package parser
 import (
 	"encoding/json"
 
-	"github.com/bravepickle/templar/v2/internal/core"
+	"github.com/bravepickle/templar/internal/core"
 )
 
 // JSONParser parses environment params

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/bravepickle/templar/v2/internal/core"
+	"github.com/bravepickle/templar/internal/core"
 	"github.com/stretchr/testify/require"
 )
 
