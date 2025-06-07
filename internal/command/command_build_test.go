@@ -193,7 +193,7 @@ func TestBuildCommand_Run(t *testing.T) {
   "items": [
     {
       "info": "This template will combine defaults with other values.",
-      "target": "rendered.txt",
+      "output": "rendered.txt",
       "template": "custom.tpl",
       "variables": {
         "foo": "custom",
@@ -201,7 +201,7 @@ func TestBuildCommand_Run(t *testing.T) {
       }
     },
     {
-      "target": "with_defaults.txt"
+      "output": "with_defaults.txt"
     }
   ],
   "defaults": {
@@ -293,13 +293,13 @@ ENV TEST_QUOTE = this is env variable
 					[]byte(`{
   "items": [
     {
-      "target": "rendered.txt",
+      "output": "rendered.txt",
       "template": "custom.tpl",
       "format": "env",
       "input": "custom.env"
     },
     {
-      "target": "with_defaults.txt"
+      "output": "with_defaults.txt"
     }
   ],
   "defaults": {
@@ -499,6 +499,149 @@ TEST_QUOTE = SRC_OS_ENV
 				must.NoError(os.WriteFile(
 					filepath.Join(cmd.WorkDir, buildCmd.InputFile),
 					[]byte(``), 0666))
+			},
+		},
+		{
+			name:           "jsonl",
+			args:           []string{"--input", "data.jsonl", "--format", "jsonl"},
+			expectedErr:    "",
+			expectedOutput: nil,
+			beforeBuild: func(sub Subcommand, cmd *Command) {
+				var ok bool
+				var buildCmd *BuildCommand
+
+				if buildCmd, ok = sub.(*BuildCommand); !ok {
+					t.Fatal("sub is not a BuildCommand")
+				}
+
+				t.Setenv("TEST_QUOTE", "be brave!")
+				cmd.WorkDir = t.TempDir()
+
+				// Init JSONL file
+				varsFilepath := filepath.Join(cmd.WorkDir, buildCmd.InputFile)
+
+				must.NoError(os.WriteFile(varsFilepath, []byte(`{"output": "output_jsonl_1.txt","template": "jsonl_1.tpl","variables":{"id": 10}}
+{"output": "output_jsonl_2.txt","template": "jsonl_2.tpl","format":"env","input":"input_2.env"} 
+
+{"output": "output_jsonl_3.txt","template": "jsonl_3.tpl","format":"json","input":"input_3.json"}
+`), 0666))
+
+				saveFile := func(filename, content string) {
+					must.NoError(os.WriteFile(
+						filepath.Join(cmd.WorkDir, filename),
+						[]byte(content),
+						0666,
+					))
+				}
+
+				// Init data #1
+				saveFile("jsonl_1.tpl", `#1 {{ .id }}: {{ env "TEST_QUOTE" }}`)
+
+				// Init data #2
+				saveFile("jsonl_2.tpl", `#2 {{ .id }}: {{ env "TEST_QUOTE" }}`)
+				saveFile("input_2.env", "id=20")
+
+				// Init data #3
+				saveFile("jsonl_3.tpl", `#3 {{ .id }}: {{ env "TEST_QUOTE" }}`)
+				saveFile("input_3.json", `{"id": 30}`)
+
+			},
+			afterBuild: func(sub Subcommand, cmd *Command) {
+				dataset := []struct {
+					filename string
+					expected string
+				}{
+					{filename: "output_jsonl_1.txt", expected: "#1 10: be brave!"},
+					{filename: "output_jsonl_2.txt", expected: "#2 20: be brave!"},
+					{filename: "output_jsonl_3.txt", expected: "#3 30: be brave!"},
+				}
+
+				for _, d := range dataset {
+					out, err := os.ReadFile(filepath.Join(cmd.WorkDir, d.filename))
+					must.NoError(err)
+
+					output := string(out)
+					t.Log(d.filename+":", output)
+					must.Equal(d.expected, output, "unexpected output for %s", d.filename)
+				}
+			},
+		},
+		{
+			name:           "jsonl piped",
+			args:           []string{"--format", "jsonl"},
+			expectedErr:    "",
+			expectedOutput: nil,
+			beforeBuild: func(sub Subcommand, cmd *Command) {
+				var ok bool
+				var buildCmd *BuildCommand
+
+				if buildCmd, ok = sub.(*BuildCommand); !ok {
+					t.Fatal("sub is not a BuildCommand")
+				}
+
+				t.Setenv("TEST_QUOTE", "be brave!")
+				cmd.WorkDir = t.TempDir()
+
+				inRead, inWrite, err := os.Pipe()
+				must.NoError(err)
+
+				closed := false
+				defer func() {
+					if !closed {
+						must.NoError(inWrite.Close())
+					}
+				}()
+
+				_, err = inWrite.WriteString(`{"output": "output_jsonl_1.txt","template": "jsonl_1.tpl","variables":{"id": 10}}
+{"output": "output_jsonl_2.txt","template": "jsonl_2.tpl","format":"env","input":"input_2.env"} 
+
+{"output": "output_jsonl_3.txt","template": "jsonl_3.tpl","format":"json","input":"input_3.json"}
+`)
+				must.NoError(err)
+				closed = true
+				must.NoError(inWrite.Close())
+
+				cmd.Input = inRead // overwrite file stream reader
+				buildCmd.In = inRead
+
+				saveFile := func(filename, content string) {
+					must.NoError(os.WriteFile(
+						filepath.Join(cmd.WorkDir, filename),
+						[]byte(content),
+						0666,
+					))
+				}
+
+				// Init data #1
+				saveFile("jsonl_1.tpl", `#1 {{ .id }}: {{ env "TEST_QUOTE" }}`)
+
+				// Init data #2
+				saveFile("jsonl_2.tpl", `#2 {{ .id }}: {{ env "TEST_QUOTE" }}`)
+				saveFile("input_2.env", "id=20")
+
+				// Init data #3
+				saveFile("jsonl_3.tpl", `#3 {{ .id }}: {{ env "TEST_QUOTE" }}`)
+				saveFile("input_3.json", `{"id": 30}`)
+
+			},
+			afterBuild: func(sub Subcommand, cmd *Command) {
+				dataset := []struct {
+					filename string
+					expected string
+				}{
+					{filename: "output_jsonl_1.txt", expected: "#1 10: be brave!"},
+					{filename: "output_jsonl_2.txt", expected: "#2 20: be brave!"},
+					{filename: "output_jsonl_3.txt", expected: "#3 30: be brave!"},
+				}
+
+				for _, d := range dataset {
+					out, err := os.ReadFile(filepath.Join(cmd.WorkDir, d.filename))
+					must.NoError(err)
+
+					output := string(out)
+					t.Log(d.filename+":", output)
+					must.Equal(d.expected, output, "unexpected output for %s", d.filename)
+				}
 			},
 		},
 	}

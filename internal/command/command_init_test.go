@@ -70,6 +70,7 @@ func TestInitCommand_Run(t *testing.T) {
 	files := map[string]string{
 		"variables.json":        ExampleJson,
 		"variables.env":         ExampleEnv,
+		"batch.jsonl":           ExampleJsonL,
 		"batch.json":            ExampleBatchJson,
 		"templates/example.tpl": ExampleTemplate,
 		"templates/custom.tpl":  ExampleCustomTemplate,
@@ -112,6 +113,10 @@ func TestInitCommand_Run_NoBatch(t *testing.T) {
 	var err error
 
 	filename := "batch.json"
+	expectedFilePath = filepath.Join(cmd.WorkDir, filename)
+	must.NoFileExists(expectedFilePath, "%s should not be present", filename)
+
+	filename = "batch.jsonl"
 	expectedFilePath = filepath.Join(cmd.WorkDir, filename)
 	must.NoFileExists(expectedFilePath, "%s should not be present", filename)
 

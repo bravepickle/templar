@@ -21,8 +21,8 @@ type BatchItem struct {
 	// Template is a template file
 	Template string `json:"template,omitempty"`
 
-	// Target is a target file to write results to. Will overwrite contents
-	Target string `json:"target,omitempty"`
+	// Output is a target file to write results to. Will overwrite contents
+	Output string `json:"output,omitempty"`
 }
 
 type BatchDefault struct {

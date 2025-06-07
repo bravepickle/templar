@@ -122,6 +122,10 @@ func (c *InitCommand) Run() error {
 		if err = os.WriteFile(c.cmd.WorkDir+`/templates/custom.tpl`, []byte(ExampleCustomTemplate), MkFilePerm); err != nil {
 			return err
 		}
+
+		if err = os.WriteFile(c.cmd.WorkDir+`/batch.jsonl`, []byte(ExampleJsonL), MkFilePerm); err != nil {
+			return err
+		}
 	}
 
 	if !c.cmd.Quiet {

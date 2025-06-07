@@ -130,11 +130,14 @@ func (c *BuildCommand) Run() error {
 		return ErrNoInit
 	}
 
-	if c.InputFormat == FormatBatch {
+	switch c.InputFormat {
+	case FormatBatch:
 		return c.runBatch()
+	case FormatJsonL:
+		return c.runBatchJSONL()
+	default:
+		return c.runOnce()
 	}
-
-	return c.runOnce()
 }
 
 func (c *BuildCommand) readInput(path string) ([]byte, error) {
@@ -186,12 +189,12 @@ func (c *BuildCommand) readVars(inputFile string, format string) (core.Params, e
 	var varParser parser.Parser
 
 	switch format {
-	case FormatEnv:
+	case FormatEnv, "":
 		varParser = c.getEnvParser(len(contents) > 0)
 	case FormatJson:
 		varParser = c.getJSONParser(len(contents) > 0)
 	default:
-		return nil, fmt.Errorf("invalid input format: %s", c.InputFormat)
+		return nil, fmt.Errorf("invalid input format: %s", format)
 	}
 
 	if varParser != nil && !varParser.IsNil() {
@@ -424,6 +427,31 @@ func (c *BuildCommand) runBatch() error {
 	return nil
 }
 
+func (c *BuildCommand) runBatchJSONL() error {
+	contents, err := c.readInput(c.InputFile)
+	if err != nil {
+		return err
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(contents)), "\n")
+
+	var defaults core.BatchDefault
+	for _, line := range lines {
+		if len(line) > 0 {
+			var item core.BatchItem
+			if err := json.Unmarshal([]byte(line), &item); err != nil {
+				return err
+			}
+
+			if err = c.runBatchItem(item, defaults); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 func (c *BuildCommand) runBatchItem(item core.BatchItem, defaults core.BatchDefault) error {
 	cfg := c.combineBatchItem(item, defaults)
 	contents, err := c.readInput(cfg.Template)
@@ -431,13 +459,13 @@ func (c *BuildCommand) runBatchItem(item core.BatchItem, defaults core.BatchDefa
 		return err
 	}
 
-	writer, err := c.selectWriter(cfg.Target)
+	writer, err := c.selectWriter(cfg.Output)
 	if err != nil {
 		return fmt.Errorf("select writer: %w", err)
 	}
 
 	if !c.NoCloseWriter {
-		if oc, ok := writer.(io.Closer); ok {
+		if oc, ok := writer.(io.Closer); ok && writer != os.Stdout && writer != os.Stderr {
 			defer oc.Close()
 		}
 	}
