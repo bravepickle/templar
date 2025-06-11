@@ -22,6 +22,10 @@
             "description": "Input format for data. If \"variables\" property is defined or no variables should be implictly defined leave this value blank or omit it.",
             "default": ""
           },
+          "input": {
+            "type": "string",
+            "description": "Input file path. Depends on the chosen input format"
+          },
           "output": {
             "type": "string",
             "description": "Output file path. Can be absolute or relevant to the working directory specified in command."
@@ -41,7 +45,6 @@
     },
     "defaults": {
       "type": "object",
-      "required": ["template", "variables"],
       "properties": {
         "info": {
           "type": "string",
@@ -52,6 +55,10 @@
           "enum": ["env", "json", ""],
           "description": "Input format for data. If \"variables\" property is defined or no variables should be implictly defined leave this value blank or omit it.",
           "default": ""
+        },
+        "input": {
+          "type": "string",
+          "description": "Input file path. Depends on the chosen input format"
         },
         "template": {
           "type": "string",
